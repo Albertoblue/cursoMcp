@@ -239,6 +239,17 @@ pre .op{color:var(--text3)}
 .course-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(110,231,183,.3);border-bottom:none!important}
 @media(max-width:640px){.course-card{grid-template-columns:1fr;text-align:center;justify-items:center}}
 
+.web-card{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;background:linear-gradient(135deg,rgba(251,191,36,.1),rgba(167,139,250,.06));border:1px solid rgba(251,191,36,.3);border-radius:16px;padding:24px;margin:20px 0;position:relative;overflow:hidden}
+.web-card::before{content:'';position:absolute;top:-40%;right:-15%;width:50%;height:180%;background:radial-gradient(circle,rgba(251,191,36,.15),transparent 70%);pointer-events:none}
+.web-card .qr-box{box-shadow:0 14px 40px rgba(251,191,36,.2)}
+.web-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--amber);font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.web-card h3{font-family:var(--font-display);font-size:26px;margin-bottom:8px;color:var(--text);letter-spacing:-.3px;position:relative;z-index:1}
+.web-card p{color:var(--text2);font-size:14px;margin-bottom:16px;line-height:1.6;position:relative;z-index:1}
+.web-card .web-url{font-family:var(--font-code);font-size:12px;color:var(--amber);margin-bottom:16px;position:relative;z-index:1;word-break:break-all}
+.web-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,var(--amber),#f59e0b);color:var(--bg)!important;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;border-bottom:none!important;transition:all .2s;position:relative;z-index:1}
+.web-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(251,191,36,.3);border-bottom:none!important}
+@media(max-width:640px){.web-card{grid-template-columns:1fr;text-align:center;justify-items:center}}
+
 /* ─── Infographics ──────────────────────────────────── */
 .infographic{background:linear-gradient(180deg,var(--bg2),var(--bg3));border:1px solid var(--border2);border-radius:16px;padding:32px 28px;margin:28px 0;position:relative;overflow:hidden}
 .infographic::after{content:'';position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(167,139,250,.08),transparent 70%);pointer-events:none}
@@ -454,6 +465,19 @@ content: `
 <p>Escanea el código QR con tu celular o comparte este enlace para abrir el curso desde cualquier dispositivo.</p>
 <div class="course-url">curso-mcp.vercel.app</div>
 <a href="https://curso-mcp.vercel.app/" target="_blank" rel="noopener" class="course-btn">Abrir curso ✦</a>
+</div>
+</div>
+
+<div class="web-card">
+<div class="qr-box">
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https%3A%2F%2Fjuan-alberto-alcantara.com%2F" alt="QR código a la página web de Juan Alberto Alcántara Sotelo" width="160" height="160">
+</div>
+<div>
+<div class="web-label">✦ Mi página personal</div>
+<h3>Visita mi sitio web</h3>
+<p>Conoce más sobre mi trabajo, proyectos y experiencia en inteligencia artificial e ingeniería.</p>
+<div class="web-url">juan-alberto-alcantara.com</div>
+<a href="https://juan-alberto-alcantara.com/" target="_blank" rel="noopener" class="web-btn">Ir al sitio →</a>
 </div>
 </div>
 </div>
