@@ -476,7 +476,7 @@ body::before{display:none}
 <circle class="pr-bg" cx="22" cy="22" r="19"></circle>
 <circle class="pr-fg" id="progressRing" cx="22" cy="22" r="19"></circle>
 </svg>
-<div class="progress-text" id="progressText">0 de 24 lecciones completadas</div>
+<div class="progress-text" id="progressText">0 de 25 lecciones completadas</div>
 </div>
 <div class="nav-search-wrap"><input id="navSearch" class="nav-search" type="search" placeholder="Buscar lección…" aria-label="Buscar lección"></div>
 
@@ -514,16 +514,17 @@ body::before{display:none}
 <div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Anatomía de resources.ts</div>
 <div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
 <div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Anatomía del Dockerfile</div>
-<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
+<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Desplegar en AWS (Terraform)</div>
+<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Parte 2 · Agentes</div>
-<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
-<div class="nav-item" onclick="goTo(22)"><span class="nav-dot"></span>Crear un skill</div>
+<div class="nav-item" onclick="goTo(22)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
+<div class="nav-item" onclick="goTo(23)"><span class="nav-dot"></span>Crear un skill</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Cierre</div>
-<div class="nav-item" onclick="goTo(23)"><span class="nav-dot"></span>Certificación</div>
+<div class="nav-item" onclick="goTo(24)"><span class="nav-dot"></span>Certificación</div>
 </div>
 </aside>
 
@@ -2565,11 +2566,129 @@ ${quiz(28, "¿Por qué el Dockerfile copia package*.json ANTES que src/?", ["Por
 `
 },
 
+// ─── P2.7c: Desplegar en AWS con Terraform ──────────────
+{
+title: "Desplegar en AWS con Terraform",
+subtitle: "De la imagen Docker a producción: ECS Fargate + ALB con IaC",
+badge: "Parte 2 · Lección 11",
+content: `
+<div class="content-block">
+<h2>Del contenedor a la nube</h2>
+<p>Ya tenemos una imagen Docker. El siguiente paso es ejecutarla en AWS de forma gestionada. El propio <code>Dockerfile</code> lo anticipa ("best practice for Fargate", "Healthcheck used by ECS"), así que el destino natural es <strong>ECS Fargate detrás de un Application Load Balancer</strong>, definido con <strong>Terraform</strong> (Infraestructura como Código: reproducible, versionable, destruible).</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">Arquitectura</span><span class="filename">AWS</span></div>
+<pre>Internet --HTTP:80--&gt; ALB --&gt; Target Group (/health)
+                                  │
+                                  ▼
+                        ECS Fargate Service   (subnets públicas, SG: solo ALB)
+                                  │  imagen
+                          ECR ◄───┘     MCP_API_KEY ◄── Secrets Manager
+                                  │
+                          CloudWatch Logs</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Qué crea el módulo terraform/</h2>
+<div class="concept-grid">
+<div class="concept-card tool"><span class="icon">🌐</span><h4>Red</h4><p>VPC, 2 subnets públicas multi-AZ, IGW y Security Groups (el ALB es público; las tareas solo aceptan tráfico del ALB).</p></div>
+<div class="concept-card tool"><span class="icon">📦</span><h4>ECR</h4><p>Repositorio de imágenes con scan on push y lifecycle (conserva 10).</p></div>
+<div class="concept-card resource"><span class="icon">🔑</span><h4>Secrets Manager</h4><p>MCP_API_KEY (aleatoria fuerte si no la fijas), inyectada al contenedor sin texto plano.</p></div>
+<div class="concept-card resource"><span class="icon">⚙️</span><h4>ECS Fargate</h4><p>Cluster, task definition y service detrás del ALB; logs a CloudWatch.</p></div>
+</div>
+<p>Estructura de <code>terraform/</code>: <code>versions.tf</code>, <code>variables.tf</code>, <code>network.tf</code>, <code>ecr.tf</code>, <code>secrets.tf</code>, <code>iam.tf</code>, <code>alb.tf</code>, <code>ecs.tf</code>, <code>outputs.tf</code>, <code>deploy.sh</code>.</p>
+</div>
+
+<div class="content-block">
+<h2>1 · El secreto: MCP_API_KEY sin texto plano</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">HCL</span><span class="filename">secrets.tf</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm"># Si no pasas var.mcp_api_key, se genera una clave fuerte</span>
+<span class="kw">resource</span> <span class="str">"random_password"</span> <span class="str">"api_key"</span> {
+  count = var.mcp_api_key == <span class="str">""</span> ? <span class="num">1</span> : <span class="num">0</span>
+  length = <span class="num">48</span>
+}
+<span class="kw">resource</span> <span class="str">"aws_secretsmanager_secret"</span> <span class="str">"mcp_api_key"</span> {
+  name = <span class="str">"\${var.project_name}/mcp-api-key"</span>
+}
+<span class="kw">resource</span> <span class="str">"aws_secretsmanager_secret_version"</span> <span class="str">"mcp_api_key"</span> {
+  secret_id     = aws_secretsmanager_secret.mcp_api_key.id
+  secret_string = local.mcp_api_key
+}</pre>
+</div>
+<p>El contenedor recibe la clave vía el bloque <code>secrets</code> del task definition (referencia al ARN, no el valor). Es la misma idea de la lección de autenticación: la clave nunca se hornea en la imagen.</p>
+</div>
+
+<div class="content-block">
+<h2>2 · El servicio: task definition + Fargate</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">HCL</span><span class="filename">ecs.tf (extracto)</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>container_definitions = <span class="fn">jsonencode</span>([{
+  name  = var.project_name
+  image = <span class="str">"\${aws_ecr_repository.this.repository_url}:\${var.image_tag}"</span>
+  portMappings = [{ containerPort = var.container_port }]
+  environment  = [{ name = <span class="str">"PORT"</span>, value = <span class="str">"8000"</span> }]
+  secrets = [{ name = <span class="str">"MCP_API_KEY"</span>,
+              valueFrom = aws_secretsmanager_secret.mcp_api_key.arn }]
+  healthCheck = { command = [<span class="str">"CMD-SHELL"</span>,
+    <span class="str">"wget -qO- http://localhost:8000/health || exit 1"</span>] }
+}])</pre>
+</div>
+<p>El target group del ALB hace health check a <code>/health</code> (la ruta sin <code>x-api-key</code>). El <code>SG</code> del servicio solo permite tráfico desde el SG del ALB: nadie llega al contenedor directamente.</p>
+</div>
+
+<div class="content-block">
+<h2>3 · Desplegar (dos fases, a propósito)</h2>
+<p>El servicio ECS no puede arrancar hasta que la imagen exista en ECR. Por eso el despliegue es: crear ECR/red/secret → build &amp; push → desplegar ALB+servicio.</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">terraform/</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>cd terraform
+cp terraform.tfvars.example terraform.tfvars
+./deploy.sh        <span class="cm"># init -&gt; ECR/red/secret -&gt; docker push -&gt; ALB+ECS</span>
+
+<span class="cm"># equivalente manual:</span>
+terraform init
+terraform apply -target=aws_ecr_repository.this -target=aws_secretsmanager_secret_version.mcp_api_key
+terraform output docker_push_commands   <span class="cm"># build + push de la imagen</span>
+terraform apply                          <span class="cm"># el resto</span></pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>4 · Después del apply</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">outputs</span></div>
+<pre>terraform output mcp_endpoint   <span class="cm"># http://&lt;alb&gt;/mcp</span>
+terraform output health_url     <span class="cm"># http://&lt;alb&gt;/health</span>
+
+<span class="cm"># leer la API key generada</span>
+aws secretsmanager get-secret-value \
+  --secret-id pokemon-mcp-server/mcp-api-key \
+  --query SecretString --output text</pre>
+</div>
+<p>Ese <code>http://&lt;alb&gt;/mcp</code> es lo que pones en Claude Desktop o en la config de Hermes, con el header <code>x-api-key</code> = valor del secret. Es el mismo servidor de toda la Parte 2, ahora en producción.</p>
+<div class="callout warning">
+<div class="callout-title">Producción</div>
+<p>El listener es HTTP:80 (hay plantilla para HTTPS/ACM en <code>alb.tf</code>); restringe <code>allowed_cidr</code>. Se usan subnets públicas sin NAT Gateway para ahorrar coste (las tareas no son accesibles directamente gracias al SG). <code>terraform destroy</code> para apagar todo y no pagar de más.</p>
+</div>
+</div>
+
+<div class="content-block">
+<div class="callout">
+<div class="callout-title">Por qué Terraform (IaC)</div>
+<p>Toda la infra está en código: <code>terraform apply</code> la crea idéntica en cualquier cuenta/región, <code>terraform destroy</code> la elimina sin recursos huérfanos, y los cambios se revisan en git como cualquier código.</p>
+</div>
+</div>
+
+${quiz(29, "¿Por qué el despliegue con Terraform se hace en dos fases?", ["Por un bug de Terraform","Porque el servicio ECS no puede arrancar hasta que la imagen exista en ECR","Para ahorrar costes","Porque el ALB tarda en crearse"], 1, "Primero se crean ECR/red/secret y se sube la imagen; solo entonces el task definition tiene una imagen que ejecutar y se despliega el servicio ECS + ALB.")}
+`
+},
+
 // ─── P2.7b: MCP Inspector ───────────────────────────────
 {
 title: "Probar con MCP Inspector",
 subtitle: "La herramienta oficial para inspeccionar y depurar tu servidor a mano",
-badge: "Parte 2 · Lección 11",
+badge: "Parte 2 · Lección 12",
 content: `
 <div class="content-block">
 <h2>¿Qué es MCP Inspector?</h2>
@@ -2629,7 +2748,7 @@ ${quiz(25, "¿Para qué sirve MCP Inspector frente al cliente de prueba (npm tes
 {
 title: "Hermes Agent + Telegram",
 subtitle: "Chatea por Telegram y deja que un agente use tu servidor MCP",
-badge: "Parte 2 · Lección 12",
+badge: "Parte 2 · Lección 13",
 content: `
 <div class="content-block">
 <h2>El mismo servidor, otro cliente</h2>
@@ -2684,7 +2803,7 @@ ${quiz(23, "Hermes (WSL) no conecta a 127.0.0.1:8000 del servidor (Windows). ¿P
 {
 title: "Crear un skill para Hermes",
 subtitle: "MCP da capacidades; el skill da conducta",
-badge: "Parte 2 · Lección 13",
+badge: "Parte 2 · Lección 14",
 content: `
 <div class="content-block">
 <div class="callout">
