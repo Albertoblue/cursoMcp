@@ -476,7 +476,7 @@ body::before{display:none}
 <circle class="pr-bg" cx="22" cy="22" r="19"></circle>
 <circle class="pr-fg" id="progressRing" cx="22" cy="22" r="19"></circle>
 </svg>
-<div class="progress-text" id="progressText">0 de 21 lecciones completadas</div>
+<div class="progress-text" id="progressText">0 de 22 lecciones completadas</div>
 </div>
 <div class="nav-search-wrap"><input id="navSearch" class="nav-search" type="search" placeholder="Buscar lección…" aria-label="Buscar lección"></div>
 
@@ -510,17 +510,18 @@ body::before{display:none}
 <div class="nav-item" onclick="goTo(13)"><span class="nav-dot"></span>Tools del servidor</div>
 <div class="nav-item" onclick="goTo(14)"><span class="nav-dot"></span>Resources y Prompts</div>
 <div class="nav-item" onclick="goTo(15)"><span class="nav-dot"></span>Transporte y sesiones</div>
-<div class="nav-item" onclick="goTo(16)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
-<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
+<div class="nav-item" onclick="goTo(16)"><span class="nav-dot"></span>Anatomía de index.ts</div>
+<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
+<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Parte 2 · Agentes</div>
-<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
-<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Crear un skill</div>
+<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
+<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Crear un skill</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Cierre</div>
-<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Certificación</div>
+<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Certificación</div>
 </div>
 </aside>
 
@@ -2112,11 +2113,159 @@ ${quiz(22, "El primer request de una sesión MCP nueva debe ser...", ["Cualquier
 `
 },
 
+// ─── P2.6b: Anatomía de index.ts ────────────────────────
+{
+title: "Anatomía de index.ts (Express + MCP)",
+subtitle: "El archivo que orquesta: dónde acaba Express y empieza MCP",
+badge: "Parte 2 · Lección 7",
+content: `
+<div class="content-block">
+<h2>El archivo que solo orquesta</h2>
+<p><code>src/index.ts</code> no contiene lógica de negocio: recibe HTTP con <strong>Express</strong> y delega el protocolo en el <strong>SDK de MCP</strong>. Toda la frontera entre ambos mundos son <strong>dos llamadas</strong>:</p>
+<ul>
+<li><code>server.connect(transport)</code> — enchufa el McpServer a un transporte.</li>
+<li><code>transport.handleRequest(req, res, body)</code> — le pasa el req/res de Express al transporte MCP.</li>
+</ul>
+<div class="callout">
+<div class="callout-title">Idea central</div>
+<p>Express no entiende MCP y MCP no entiende Express. <code>index.ts</code> solo los conecta en esos dos puntos. Esa es la separación estricta de capas.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>1 · Imports — el orden importa</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">src/index.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">// PRIMERO de todo: carga .env a process.env</span>
+<span class="kw">import</span> <span class="str">"dotenv/config"</span>;
+
+<span class="kw">import</span> express, { Request, Response } <span class="kw">from</span> <span class="str">"express"</span>;        <span class="cm">// Express</span>
+<span class="kw">import</span> { randomUUID } <span class="kw">from</span> <span class="str">"node:crypto"</span>;                  <span class="cm">// id de sesión</span>
+<span class="kw">import</span> { McpServer } <span class="kw">from</span> <span class="str">"@modelcontextprotocol/sdk/server/mcp.js"</span>;            <span class="cm">// MCP</span>
+<span class="kw">import</span> { StreamableHTTPServerTransport } <span class="kw">from</span> <span class="str">".../streamableHttp.js"</span>;     <span class="cm">// MCP</span>
+<span class="kw">import</span> { isInitializeRequest } <span class="kw">from</span> <span class="str">".../types.js"</span>;                       <span class="cm">// MCP</span>
+
+<span class="kw">import</span> { authMiddleware } <span class="kw">from</span> <span class="str">"./middleware/auth"</span>;     <span class="cm">// Express</span>
+<span class="kw">import</span> { registerTools } <span class="kw">from</span> <span class="str">"./tools/index"</span>;          <span class="cm">// MCP</span></pre>
+</div>
+<div class="callout danger">
+<div class="callout-title">Por qué dotenv va el primero</div>
+<p><code>middleware/auth.ts</code> lee <code>process.env.MCP_API_KEY</code> <strong>al evaluarse el módulo</strong>. Si <code>dotenv/config</code> no corre antes, la clave queda undefined y aparece el 401 que vimos en la lección de Autenticación.</p>
+</div>
+<p style="font-size:13px;color:var(--text3)">Nota: los imports relativos van <strong>sin</strong> <code>.js</code> (module commonjs); los del SDK sí lo conservan porque son archivos reales en node_modules.</p>
+</div>
+
+<div class="content-block">
+<h2>2 · Parte MCP — un servidor por sesión</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">registro de sesiones</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">// Mapa en memoria: sessionId -> transporte de esa sesión</span>
+<span class="kw">const</span> activeSessions = <span class="kw">new</span> <span class="fn">Map</span>&lt;<span class="type">string</span>, <span class="type">StreamableHTTPServerTransport</span>&gt;();
+
+<span class="cm">// Crea un McpServer NUEVO por sesión (estado aislado entre clientes)</span>
+<span class="kw">function</span> <span class="fn">buildServer</span>() {
+  <span class="kw">const</span> server = <span class="kw">new</span> <span class="fn">McpServer</span>(
+    { name: SERVER_NAME, version: SERVER_VERSION },          <span class="cm">// identidad</span>
+    { capabilities: { tools:{}, resources:{}, prompts:{} } }  <span class="cm">// qué expone</span>
+  );
+  <span class="fn">registerTools</span>(server);
+  <span class="fn">registerResources</span>(server);
+  <span class="fn">registerPrompts</span>(server);
+  <span class="kw">return</span> server;
+}</pre>
+</div>
+<p>Aquí no hay nada de HTTP: es 100% MCP. Un servidor por sesión evita que el estado de un cliente se filtre a otro.</p>
+</div>
+
+<div class="content-block">
+<h2>3 · Parte Express — app, middleware y /health</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">Express</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="kw">const</span> app = <span class="fn">express</span>();
+app.<span class="fn">use</span>(express.<span class="fn">json</span>());     <span class="cm">// parsea el body -> req.body (MCP lo necesita)</span>
+app.<span class="fn">use</span>(authMiddleware);     <span class="cm">// valida x-api-key salvo en /health</span>
+
+app.<span class="fn">get</span>(<span class="str">"/health"</span>, (_req, res) =&gt; {
+  res.<span class="fn">json</span>({ status: <span class="str">"ok"</span>, activeSessions: activeSessions.size });
+});</pre>
+</div>
+<p><code>express.json()</code> es imprescindible: sin <code>req.body</code> parseado, MCP no puede ver si la petición es un <code>initialize</code> ni procesar el JSON-RPC. <code>/health</code> es puramente Express (sin MCP).</p>
+</div>
+
+<div class="content-block">
+<h2>4 · El núcleo: POST /mcp (donde se unen)</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">POST /mcp</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>app.<span class="fn">post</span>(<span class="str">"/mcp"</span>, <span class="kw">async</span> (req, res) =&gt; {
+  <span class="kw">const</span> sessionId = req.headers[<span class="str">"mcp-session-id"</span>];          <span class="cm">// Express lee el header</span>
+  <span class="kw">let</span> transport = sessionId ? activeSessions.<span class="fn">get</span>(sessionId) : undefined;
+
+  <span class="kw">if</span> (!transport) {
+    <span class="cm">// Sin sesión: el body DEBE ser un initialize</span>
+    <span class="kw">if</span> (!<span class="fn">isInitializeRequest</span>(req.body)) {
+      <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({ error: <span class="str">"not an initialize request"</span> });
+    }
+    <span class="kw">const</span> server = <span class="fn">buildServer</span>();                <span class="cm">// MCP: server nuevo</span>
+    transport = <span class="kw">new</span> <span class="fn">StreamableHTTPServerTransport</span>({
+      sessionIdGenerator: () =&gt; <span class="fn">randomUUID</span>(),
+      onsessioninitialized: (id) =&gt; activeSessions.<span class="fn">set</span>(id, transport)  <span class="cm">// registra</span>
+    });
+    transport.onclose = () =&gt; activeSessions.<span class="fn">delete</span>(transport.sessionId); <span class="cm">// limpia</span>
+    <span class="kw">await</span> server.<span class="fn">connect</span>(transport);          <span class="cm">// ◄ FRONTERA MCP</span>
+  }
+
+  <span class="kw">await</span> transport.<span class="fn">handleRequest</span>(req, res, req.body); <span class="cm">// ◄ FRONTERA Express -&gt; MCP</span>
+});</pre>
+</div>
+<p><code>handleRequest</code> es la línea clave: recibe el <code>req/res</code> de Express, MCP parsea el JSON-RPC, ejecuta la tool/resource/prompt y <strong>escribe la respuesta directamente en res</strong>. Después de esa línea, Express ya no hace nada más.</p>
+</div>
+
+<div class="content-block">
+<h2>Flujo de una petición</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Flujo</span><span class="filename">POST /mcp</span></div>
+<pre>Cliente --HTTP POST /mcp--&gt; Express
+  express.json()  -&gt; req.body
+  authMiddleware  -&gt; valida x-api-key
+  ¿header Mcp-Session-Id?
+     sí  -&gt; recupera transport del Map        (sesión en curso)
+     no  -&gt; ¿isInitializeRequest(body)?
+              no  -&gt; 400 (JSON-RPC error)
+              sí  -&gt; buildServer() + new Transport
+                     server.connect(transport)
+  transport.handleRequest(req, res, body)  -&gt; MCP procesa y responde
+Cliente &lt;-- respuesta JSON-RPC escrita en res</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>5 · DELETE /mcp y arranque</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">cierre + listen</span></div>
+<pre><span class="cm">// Cierre explícito de sesión: dispara transport.onclose y limpia el Map</span>
+app.<span class="fn">delete</span>(<span class="str">"/mcp"</span>, <span class="kw">async</span> (req, res) =&gt; {
+  <span class="kw">const</span> t = activeSessions.<span class="fn">get</span>(req.headers[<span class="str">"mcp-session-id"</span>]);
+  <span class="kw">if</span> (!t) <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">404</span>).<span class="fn">json</span>({ error: <span class="str">"Session not found"</span> });
+  <span class="kw">await</span> t.<span class="fn">handleRequest</span>(req, res);
+});
+
+app.<span class="fn">listen</span>(PORT, <span class="str">"0.0.0.0"</span>, () =&gt; <span class="fn">printBanner</span>());  <span class="cm">// 0.0.0.0 = acepta externas</span></pre>
+</div>
+<div class="callout">
+<div class="callout-title">Mapa Express vs MCP</div>
+<p><strong>Express:</strong> rutas, body JSON, auth, listen. <strong>MCP:</strong> McpServer, transporte, sesiones, initialize. <strong>Puente:</strong> <code>server.connect()</code> + <code>transport.handleRequest()</code>.</p>
+</div>
+</div>
+
+${quiz(26, "En index.ts, ¿qué dos llamadas son la frontera Express ↔ MCP?", ["express.json() y app.listen()","app.post() y res.json()","server.connect(transport) y transport.handleRequest(req,res,body)","buildServer() y registerTools()"], 2, "server.connect enchufa el McpServer al transporte; handleRequest entrega el req/res de Express para que MCP procese y responda.")}
+`
+},
+
 // ─── P2.7: Ejecutar y desplegar ─────────────────────────
 {
 title: "Ejecutar, probar y desplegar",
 subtitle: "npm, cliente de prueba, dos bugs reales, Docker y Claude Desktop",
-badge: "Parte 2 · Lección 7",
+badge: "Parte 2 · Lección 8",
 content: `
 <div class="content-block">
 <h2>Correr y verificar</h2>
@@ -2172,7 +2321,7 @@ docker run -p 8000:8000 -e MCP_API_KEY=mi-clave pokemon-mcp-server</pre>
 {
 title: "Probar con MCP Inspector",
 subtitle: "La herramienta oficial para inspeccionar y depurar tu servidor a mano",
-badge: "Parte 2 · Lección 8",
+badge: "Parte 2 · Lección 9",
 content: `
 <div class="content-block">
 <h2>¿Qué es MCP Inspector?</h2>
@@ -2232,7 +2381,7 @@ ${quiz(25, "¿Para qué sirve MCP Inspector frente al cliente de prueba (npm tes
 {
 title: "Hermes Agent + Telegram",
 subtitle: "Chatea por Telegram y deja que un agente use tu servidor MCP",
-badge: "Parte 2 · Lección 9",
+badge: "Parte 2 · Lección 10",
 content: `
 <div class="content-block">
 <h2>El mismo servidor, otro cliente</h2>
@@ -2287,7 +2436,7 @@ ${quiz(23, "Hermes (WSL) no conecta a 127.0.0.1:8000 del servidor (Windows). ¿P
 {
 title: "Crear un skill para Hermes",
 subtitle: "MCP da capacidades; el skill da conducta",
-badge: "Parte 2 · Lección 10",
+badge: "Parte 2 · Lección 11",
 content: `
 <div class="content-block">
 <div class="callout">
