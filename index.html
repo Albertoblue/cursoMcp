@@ -380,7 +380,7 @@ pre .op{color:var(--text3)}
 <p>Curso interactivo</p>
 </div>
 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-<div class="progress-text" id="progressText">0 de 11 lecciones completadas</div>
+<div class="progress-text" id="progressText">0 de 20 lecciones completadas</div>
 
 <div class="nav-section">
 <div class="nav-section-title">Inicio</div>
@@ -403,7 +403,25 @@ pre .op{color:var(--text3)}
 <div class="nav-section-title">Avanzado</div>
 <div class="nav-item" onclick="goTo(8)"><span class="nav-dot"></span>Transportes</div>
 <div class="nav-item" onclick="goTo(9)"><span class="nav-dot"></span>Tu primer servidor</div>
-<div class="nav-item" onclick="goTo(10)"><span class="nav-dot"></span>Certificación</div>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Parte 2 · Proyecto real</div>
+<div class="nav-item" onclick="goTo(10)"><span class="nav-dot"></span>El proyecto pokemon-mcp-server</div>
+<div class="nav-item" onclick="goTo(11)"><span class="nav-dot"></span>Capa API (PokeAPI)</div>
+<div class="nav-item" onclick="goTo(12)"><span class="nav-dot"></span>Autenticación y config</div>
+<div class="nav-item" onclick="goTo(13)"><span class="nav-dot"></span>Tools del servidor</div>
+<div class="nav-item" onclick="goTo(14)"><span class="nav-dot"></span>Resources y Prompts</div>
+<div class="nav-item" onclick="goTo(15)"><span class="nav-dot"></span>Transporte y sesiones</div>
+<div class="nav-item" onclick="goTo(16)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Parte 2 · Agentes</div>
+<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
+<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Crear un skill</div>
+</div>
+<div class="nav-section">
+<div class="nav-section-title">Cierre</div>
+<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Certificación</div>
 </div>
 </aside>
 
@@ -1698,6 +1716,734 @@ ${quiz(8, "En el servidor de notas, ¿cuántas primitivas MCP registramos en tot
 "4 (2 tools + 1 resource + 1 prompt)",
 "5 (3 tools + 1 resource + 1 prompt)"
 ], 2, "Registramos 4 primitivas: 2 tools (crear_nota, buscar_notas), 1 resource (notes://list) y 1 prompt (resumir_notas).")}
+`
+},
+
+// ════════════ PARTE 2 · PROYECTO REAL ════════════
+
+// ─── P2.1: El proyecto ──────────────────────────────────
+{
+title: "Parte 2 — El proyecto pokemon-mcp-server",
+subtitle: "De la teoría a un servidor MCP real que cualquier cliente puede consumir",
+badge: "Parte 2 · Lección 1",
+content: `
+<div class="content-block">
+<h2>De la teoría a la práctica</h2>
+<p>En la Parte 1 entendiste <strong>qué</strong> es MCP y sus primitivas. En la Parte 2 construimos un servidor MCP real: <strong>pokemon-mcp-server</strong>, que envuelve la API pública <a href="https://pokeapi.co" target="_blank">PokeAPI</a> y la expone como Tools, Resources y Prompts. El mismo servidor servirá luego a Claude Desktop, a un cliente de prueba y a un agente (Hermes) por Telegram — sin cambiar una línea.</p>
+<h3>Stack</h3>
+<ul>
+<li><strong>TypeScript + Express</strong> — servidor HTTP</li>
+<li><strong>@modelcontextprotocol/sdk</strong> — SDK oficial de Anthropic</li>
+<li><strong>zod</strong> — validación de schemas</li>
+<li><strong>PokeAPI</strong> — datos reales, pública, sin auth</li>
+</ul>
+</div>
+
+<div class="content-block">
+<h2>Arquitectura</h2>
+<p>La regla de oro: <strong>separación estricta de capas</strong> — cada capa ignora lo que hay por encima.</p>
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin:16px 0">
+<img src="Arquitectura.png" alt="Arquitectura del proyecto pokemon-mcp-server: capas Cliente, Orquesta (Express), Transporte MCP, Cliente API y API externa" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto">
+<p style="font-size:12px;color:var(--text3);margin:10px 0 0">Figura · Las 5 capas del proyecto y el flujo de una petición.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Estructura de archivos</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Estructura</span><span class="filename">pokemon-mcp-server/</span></div>
+<pre>src/
+  index.ts                <span class="cm">// Express + sesiones (orquestación)</span>
+  api/pokeapi.ts          <span class="cm">// cliente HTTP tipado de PokeAPI</span>
+  middleware/auth.ts      <span class="cm">// validación x-api-key</span>
+  tools/index.ts          <span class="cm">// 5 tools</span>
+  resources/index.ts      <span class="cm">// 4 resources (2 fijos + 2 plantillas)</span>
+  prompts/index.ts        <span class="cm">// 3 prompts</span>
+test/client.mjs           <span class="cm">// cliente de prueba ESM</span>
+Dockerfile · package.json · tsconfig.json · .env</pre>
+</div>
+</div>
+
+<div class="content-block">
+<div class="callout">
+<div class="callout-title">Por qué importa la separación</div>
+<p><code>pokeapi.ts</code> no sabe que existe MCP — se podría reusar en una API REST normal. <code>tools/</code> no sabe que existe Express. <code>index.ts</code> solo orquesta. Código testeable y portable.</p>
+</div>
+</div>
+
+${quiz(20, "¿Cuál es la regla de oro de la arquitectura del proyecto?", ["Usar la menor cantidad de archivos","Separación estricta de capas","Poner toda la lógica en index.ts","Evitar TypeScript"], 1, "Cada capa ignora lo que hay por encima: pokeapi.ts no sabe de MCP, tools/ no sabe de Express, index.ts solo orquesta.")}
+`
+},
+
+// ─── P2.2: Capa API ─────────────────────────────────────
+{
+title: "La capa API — PokeAPI",
+subtitle: "Un cliente HTTP tipado que no sabe nada de MCP",
+badge: "Parte 2 · Lección 2",
+content: `
+<div class="content-block">
+<h2>Aislar el mundo exterior</h2>
+<p><code>src/api/pokeapi.ts</code> hace <code>fetch</code> nativo a PokeAPI y devuelve <strong>tipos propios</strong>. Es el corazón reutilizable: si PokeAPI cambia su forma, solo se toca esta capa.</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">api/pokeapi.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="kw">const</span> BASE_URL = <span class="str">"https://pokeapi.co/api/v2"</span>;
+
+<span class="kw">async function</span> <span class="fn">get</span>&lt;T&gt;(path: <span class="type">string</span>): <span class="type">Promise</span>&lt;T&gt; {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(BASE_URL + path);
+  <span class="kw">if</span> (!res.ok) <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">"PokeAPI error "</span> + res.status);
+  <span class="kw">return</span> res.<span class="fn">json</span>() <span class="kw">as</span> <span class="type">Promise</span>&lt;T&gt;;
+}
+
+<span class="cm">// Mapea la respuesta cruda a un tipo limpio y estable</span>
+<span class="kw">export async function</span> <span class="fn">getPokemon</span>(nameOrId: <span class="type">string</span> | <span class="type">number</span>) {
+  <span class="kw">const</span> raw = <span class="kw">await</span> <span class="fn">get</span>&lt;<span class="type">any</span>&gt;(<span class="str">"/pokemon/"</span> + <span class="fn">String</span>(nameOrId).<span class="fn">toLowerCase</span>());
+  <span class="kw">return</span> {
+    id: raw.id, name: raw.name,
+    types: raw.types.<span class="fn">map</span>((t) =&gt; ({ name: t.type.name })),
+    <span class="cm">/* abilities, stats, sprite... */</span>
+  };
+}</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Funciones expuestas</h2>
+<ul>
+<li><code>getPokemon(nameOrId)</code> — id, nombre, tipos, stats, habilidades, sprite</li>
+<li><code>getMove(name)</code> — tipo, power, accuracy, PP, efecto</li>
+<li><code>getTypeRelations(type)</code> — daño doble/medio/nulo, ofensivo y defensivo</li>
+<li><code>getEvolutionChain(name)</code> — etapas con trigger y nivel mínimo (recursivo)</li>
+<li><code>listPokemon(limit, offset)</code> — lista paginada con id extraído de la URL</li>
+</ul>
+<div class="callout">
+<div class="callout-title">Lección de diseño</div>
+<p>Nunca devuelvas la respuesta cruda de una API externa hacia arriba. Mapéala a <strong>tus propios tipos</strong>: desacoplas tu servidor de los cambios de terceros.</p>
+</div>
+</div>
+`
+},
+
+// ─── P2.3: Autenticación y config ───────────────────────
+{
+title: "Autenticación y configuración",
+subtitle: "Middleware x-api-key, dotenv y un caso real de 401",
+badge: "Parte 2 · Lección 3",
+content: `
+<div class="content-block">
+<h2>Middleware de API key</h2>
+<p>Un middleware Express valida el header <code>x-api-key</code> en todas las rutas <strong>excepto</strong> <code>/health</code> (para que los health checks no necesiten clave).</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">middleware/auth.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="kw">const</span> API_KEY = process.env.MCP_API_KEY ?? <span class="str">"dev-secret-key"</span>;
+
+<span class="kw">export function</span> <span class="fn">authMiddleware</span>(req, res, next) {
+  <span class="kw">if</span> (req.path === <span class="str">"/health"</span>) <span class="kw">return</span> <span class="fn">next</span>();
+  <span class="kw">const</span> provided = req.headers[<span class="str">"x-api-key"</span>];
+  <span class="kw">if</span> (!provided || provided !== API_KEY)
+    <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">401</span>).<span class="fn">json</span>({ error: <span class="str">"Unauthorized"</span> });
+  <span class="fn">next</span>();
+}</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Caso real: 401 aunque "ya puse la key"</h2>
+<div class="callout danger">
+<div class="callout-title">El bug</div>
+<p>El proyecto <strong>no cargaba <code>.env</code> automáticamente</strong>: <code>process.env.MCP_API_KEY</code> quedaba <em>undefined</em> y el servidor usaba el fallback <code>dev-secret-key</code>, distinto de la clave configurada en el cliente → <code>401</code>.</p>
+</div>
+<p>Solución: añadir <code>dotenv</code> y cargarlo <strong>antes</strong> que cualquier import que lea la variable (<code>middleware/auth.ts</code> la lee al cargarse):</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">src/index.ts (primera línea de imports)</span></div>
+<pre><span class="cm">// debe ir ANTES de importar middleware/auth.ts</span>
+<span class="kw">import</span> <span class="str">"dotenv/config"</span>;</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Diagnóstico con curl</div>
+<p>Un <strong>400</strong> = auth OK pero body inválido. Un <strong>401</strong> = clave incorrecta. Así aíslas si el problema es la clave antes de tocar código:</p>
+<pre style="margin:0">curl -s -o /dev/null -w "%{http_code}" -X POST localhost:8000/mcp -H "x-api-key: TU-CLAVE" -d "{}"</pre>
+</div>
+<div class="callout warning">
+<div class="callout-title">Seguridad</div>
+<p><code>dev-secret-key</code> es solo desarrollo. En producción usa una clave fuerte (<code>openssl rand -hex 32</code>) por variable de entorno y mantén <code>.env</code> fuera de git.</p>
+</div>
+</div>
+`
+},
+
+// ─── P2.4: Tools ────────────────────────────────────────
+{
+title: "Tools del servidor",
+subtitle: "Las 5 funciones que el LLM puede invocar — y un caso real de TypeScript",
+badge: "Parte 2 · Lección 4",
+content: `
+<div class="content-block">
+<h2>Registrar tools sin que tsc explote</h2>
+<p>La API genérica del SDK + zod en modo <code>strict</code> dispara <code>TS2589</code> ("type instantiation excessively deep"). La solución: aislar la inferencia en un <strong>helper único</strong> que castea en la frontera del SDK; los handlers se tipan a mano.</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">tools/index.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">// Corta la inferencia genérica problemática (TS2589)</span>
+<span class="kw">function</span> <span class="fn">tool</span>(server, name, description, inputSchema, handler) {
+  server.<span class="fn">registerTool</span>(name, { description, inputSchema } <span class="kw">as any</span>, handler <span class="kw">as any</span>);
+}
+
+<span class="fn">tool</span>(server, <span class="str">"get_pokemon"</span>,
+  <span class="str">"Fetch full details of a Pokémon by name or Pokédex number."</span>,
+  { nameOrId: z.<span class="fn">union</span>([z.<span class="fn">string</span>(), z.<span class="fn">number</span>()]) },
+  <span class="kw">async</span> ({ nameOrId }) =&gt; {
+    <span class="kw">const</span> p = <span class="kw">await</span> <span class="fn">getPokemon</span>(nameOrId);
+    <span class="kw">return</span> { content: [{ type: <span class="str">"text"</span>, text: <span class="fn">render</span>(p) }] };
+  });</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Las 5 tools</h2>
+<div class="concept-grid">
+<div class="concept-card tool"><span class="icon">📇</span><h4>get_pokemon</h4><p>Ficha: tipos, stats, habilidades.</p></div>
+<div class="concept-card tool"><span class="icon">⚡</span><h4>get_move</h4><p>Power, accuracy, PP, efecto.</p></div>
+<div class="concept-card tool"><span class="icon">🛡️</span><h4>get_type_relations</h4><p>Debilidades/resistencias 2× ½× 0×.</p></div>
+<div class="concept-card tool"><span class="icon">🧬</span><h4>get_evolution_chain</h4><p>Etapas, trigger, nivel mínimo.</p></div>
+<div class="concept-card tool"><span class="icon">📚</span><h4>list_pokemon</h4><p>Pokédex paginada (máx 100).</p></div>
+</div>
+<div class="callout">
+<div class="callout-title">Truco profesional</div>
+<p>La <strong>descripción</strong> de la tool es prompt engineering: el modelo la usa para decidir cuándo llamarla. Específica gana a vaga.</p>
+</div>
+</div>
+
+${quiz(21, "¿Por qué se envuelve registerTool en un helper que castea a any?", ["Para ir más rápido","Para evitar instalar zod","Para colapsar la inferencia genérica y evitar TS2589","Es obligatorio del SDK"], 2, "La inferencia profunda del SDK + zod dispara TS2589; aislarla en una frontera única mantiene el resto del código tipado.")}
+`
+},
+
+// ─── P2.5: Resources y Prompts ──────────────────────────
+{
+title: "Resources y Prompts",
+subtitle: "Datos de solo lectura y plantillas que guían al modelo",
+badge: "Parte 2 · Lección 5",
+content: `
+<div class="content-block">
+<h2>4 Resources</h2>
+<div class="concept-grid">
+<div class="concept-card resource"><span class="icon">📋</span><h4>pokedex://type-chart</h4><p>Estático · los 18 tipos.</p></div>
+<div class="concept-card resource"><span class="icon">ℹ️</span><h4>mcp://server-info</h4><p>Estático · metadatos JSON.</p></div>
+<div class="concept-card resource"><span class="icon">🎴</span><h4>pokemon://{name}</h4><p>Plantilla · perfil con barras.</p></div>
+<div class="concept-card resource"><span class="icon">🔥</span><h4>type://{name}</h4><p>Plantilla · relaciones de daño.</p></div>
+</div>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">resources/index.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">// Estático</span>
+server.<span class="fn">registerResource</span>(<span class="str">"type-chart"</span>, <span class="str">"pokedex://type-chart"</span>,
+  { mimeType: <span class="str">"text/plain"</span> },
+  <span class="kw">async</span> () =&gt; ({ contents: [{ uri: <span class="str">"pokedex://type-chart"</span>, text: <span class="str">"..."</span> }] }));
+
+<span class="cm">// Plantilla dinámica: {name} se extrae de la URI</span>
+server.<span class="fn">registerResource</span>(<span class="str">"pokemon-profile"</span>,
+  <span class="kw">new</span> <span class="fn">ResourceTemplate</span>(<span class="str">"pokemon://{name}"</span>, { list: <span class="kw">undefined</span> }),
+  {},
+  <span class="kw">async</span> (uri, { name }) =&gt; ({ contents: [{ uri: uri.href, text: <span class="kw">await</span> <span class="fn">profile</span>(name) }] }));</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>3 Prompts</h2>
+<div class="concept-grid">
+<div class="concept-card prompt"><span class="icon">⚔️</span><h4>battle-analysis</h4><p>Análisis de combate guiado.</p></div>
+<div class="concept-card prompt"><span class="icon">📖</span><h4>pokedex-entry</h4><p>Entrada de Pokédex en 3 estilos.</p></div>
+<div class="concept-card prompt"><span class="icon">🧩</span><h4>team-builder</h4><p>Equipo competitivo de 5.</p></div>
+</div>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">prompts/index.ts</span></div>
+<pre>server.<span class="fn">registerPrompt</span>(<span class="str">"battle-analysis"</span>,
+  { argsSchema: { pokemon1: z.<span class="fn">string</span>(), pokemon2: z.<span class="fn">string</span>() } },
+  ({ pokemon1, pokemon2 }) =&gt; ({ messages: [{ role: <span class="str">"user"</span>, content: {
+    type: <span class="str">"text"</span>, text: <span class="str">"Analiza el combate y usa get_pokemon para ambos..."</span> } }] }));</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Recuerda la idea central</div>
+<p><strong>Tool = hacer · Resource = leer · Prompt = guiar.</strong> Misma fuente (PokeAPI), distinto control: la tool la invoca el modelo; el resource lo abre el cliente; el prompt lo elige el usuario.</p>
+</div>
+</div>
+`
+},
+
+// ─── P2.6: Transporte y sesiones ────────────────────────
+{
+title: "Transporte Streamable HTTP y sesiones",
+subtitle: "Un solo endpoint, una sesión por cliente",
+badge: "Parte 2 · Lección 6",
+content: `
+<div class="content-block">
+<h2>El orquestador</h2>
+<p><code>src/index.ts</code> solo orquesta: Express + autenticación + gestión de sesiones. Usamos <strong>Streamable HTTP</strong> (transporte moderno), no SSE.</p>
+<ul>
+<li><code>POST /mcp</code> — todo el protocolo JSON-RPC (initialize + llamadas)</li>
+<li><code>DELETE /mcp</code> — termina una sesión</li>
+<li><code>GET /health</code> — healthcheck con <code>activeSessions</code> (sin auth)</li>
+</ul>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">src/index.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>app.<span class="fn">post</span>(<span class="str">"/mcp"</span>, <span class="kw">async</span> (req, res) =&gt; {
+  <span class="kw">const</span> sessionId = req.headers[<span class="str">"mcp-session-id"</span>];
+  <span class="kw">let</span> transport = sessionId ? activeSessions.<span class="fn">get</span>(sessionId) : <span class="kw">undefined</span>;
+
+  <span class="kw">if</span> (!transport) {
+    <span class="cm">// Sin sesión: el body DEBE ser un initialize request</span>
+    <span class="kw">if</span> (!<span class="fn">isInitializeRequest</span>(req.body))
+      <span class="kw">return</span> res.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({ error: <span class="str">"not an initialize request"</span> });
+    <span class="kw">const</span> server = <span class="fn">buildServer</span>();          <span class="cm">// McpServer nuevo por sesión</span>
+    transport = <span class="kw">new</span> <span class="fn">StreamableHTTPServerTransport</span>({
+      sessionIdGenerator: () =&gt; <span class="fn">randomUUID</span>() });
+    transport.onclose = () =&gt; activeSessions.<span class="fn">delete</span>(transport.sessionId);
+    <span class="kw">await</span> server.<span class="fn">connect</span>(transport);
+  }
+  <span class="kw">await</span> transport.<span class="fn">handleRequest</span>(req, res, req.body);
+});</pre>
+</div>
+</div>
+
+<div class="content-block">
+<div class="callout warning">
+<div class="callout-title">SSE vs Streamable HTTP</div>
+<p>El SDK antiguo usaba SSE (<code>GET /sse</code> + <code>POST /messages</code>). Streamable HTTP lo reemplaza con un solo endpoint, maneja mejor proxies/balancers y es el recomendado hoy. Migrar de uno a otro fue parte del trabajo real.</p>
+</div>
+</div>
+
+${quiz(22, "El primer request de una sesión MCP nueva debe ser...", ["Cualquier llamada a tool","Un initialize request","Un GET /health","Un DELETE /mcp"], 1, "Sin sesión, el body debe pasar isInitializeRequest; si no, el servidor responde 400.")}
+`
+},
+
+// ─── P2.7: Ejecutar y desplegar ─────────────────────────
+{
+title: "Ejecutar, probar y desplegar",
+subtitle: "npm, cliente de prueba, dos bugs reales, Docker y Claude Desktop",
+badge: "Parte 2 · Lección 7",
+content: `
+<div class="content-block">
+<h2>Correr y verificar</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">terminal</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>npm install
+cp .env.example .env
+npm run dev          <span class="cm"># servidor</span>
+node test/client.mjs <span class="cm"># cliente: lista y llama tools/resources/prompts</span></pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Dos bugs reales que vas a encontrar</h2>
+<div class="callout danger">
+<div class="callout-title">"Cannot find module './middleware/auth.js'"</div>
+<p>Los imports relativos llevaban <code>.js</code>. Con <code>tsc</code> funciona (el <code>.js</code> existe en <code>dist/</code>), pero <code>ts-node-dev</code> ejecuta los <code>.ts</code> directamente y no hay <code>auth.js</code>. Con <code>module: commonjs</code>, quita el <code>.js</code> de los imports <strong>relativos</strong> (los del SDK sí lo conservan).</p>
+</div>
+<div class="callout danger">
+<div class="callout-title">TS2589 / heap out of memory</div>
+<p>La API genérica del SDK + zod recursiona la inferencia. Subir RAM solo posponía el OOM (síntoma); el fix real fue el <strong>helper que castea en la frontera</strong> (lección 4). Lección transversal: encapsula el problema de tipos en un punto único.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Docker y Claude Desktop</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">docker</span></div>
+<pre>docker build -t pokemon-mcp-server .
+docker run -p 8000:8000 -e MCP_API_KEY=mi-clave pokemon-mcp-server</pre>
+</div>
+<div class="code-block">
+<div class="code-header"><span class="lang">JSON</span><span class="filename">claude_desktop_config.json</span></div>
+<pre>{
+  <span class="str">"mcpServers"</span>: {
+    <span class="str">"pokemon"</span>: {
+      <span class="str">"type"</span>: <span class="str">"http"</span>,
+      <span class="str">"url"</span>: <span class="str">"http://localhost:8000/mcp"</span>,
+      <span class="str">"headers"</span>: { <span class="str">"x-api-key"</span>: <span class="str">"dev-secret-key"</span> }
+    }
+  }
+}</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Checklist de verificación</div>
+<p>① tsc compila · ② /health responde con activeSessions · ③ 5 tools, 4 resources, 3 prompts responden · ④ sin x-api-key → 401.</p>
+</div>
+</div>
+`
+},
+
+// ─── P2.8: Hermes + Telegram ────────────────────────────
+{
+title: "Hermes Agent + Telegram",
+subtitle: "Chatea por Telegram y deja que un agente use tu servidor MCP",
+badge: "Parte 2 · Lección 8",
+content: `
+<div class="content-block">
+<h2>El mismo servidor, otro cliente</h2>
+<p><strong>Hermes Agent</strong> (Nous Research) es un agente autónomo que soporta servidores MCP y un <em>messaging gateway</em> a 20+ plataformas, incluida Telegram. Actúa como <strong>cliente MCP</strong> — igual que el test client o Claude Desktop. No cambiamos nada del servidor.</p>
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin:16px 0">
+<img src="telegram.png" alt="Flujo: mensaje de Telegram pasa por Hermes Gateway, Hermes Agent (cliente MCP), pokemon-mcp-server y PokeAPI, y la respuesta vuelve a Telegram" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto">
+<p style="font-size:12px;color:var(--text3);margin:10px 0 0">Figura · Flujo Telegram → Hermes → pokemon-mcp-server → PokeAPI.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Pasos</h2>
+<ul>
+<li><strong>A.</strong> Expón el servidor con una URL accesible (<code>ngrok http 8000</code> o despliega).</li>
+<li><strong>B.</strong> Crea el bot con <a href="https://t.me/BotFather" target="_blank">@BotFather</a> → token + tu user ID.</li>
+<li><strong>C.</strong> Registra el MCP en la config de Hermes (allowlist de tools).</li>
+<li><strong>D.</strong> Configura Telegram (<code>hermes gateway setup</code> o variables de entorno).</li>
+<li><strong>E.</strong> Arranca: <code>hermes gateway run</code> · verifica <code>hermes mcp test pokemon</code>.</li>
+<li><strong>F.</strong> Escríbele al bot.</li>
+</ul>
+<div class="code-block">
+<div class="code-header"><span class="lang">YAML</span><span class="filename">config de Hermes</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>mcp_servers:
+  <span class="fn">pokemon</span>:
+    url: <span class="str">"http://127.0.0.1:8000/mcp"</span>
+    headers:
+      x-api-key: <span class="str">"&lt;tu-clave&gt;"</span>
+    tools:
+      include: [get_pokemon, get_type_relations, get_evolution_chain]</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Prompts de ejemplo para probar</h2>
+<ul>
+<li>«¿Cuáles son los stats, tipos y habilidades de <strong>Gengar</strong>?» (get_pokemon)</li>
+<li>«¿A qué es débil el tipo <strong>dragón</strong>?» (get_type_relations)</li>
+<li>«Compara <strong>Charizard</strong> y <strong>Blastoise</strong>: tipos, stats y quién gana.»</li>
+<li>«Arma un equipo competitivo OU alrededor de <strong>Tyranitar</strong>.» (team-builder)</li>
+</ul>
+<div class="callout danger">
+<div class="callout-title">Error típico: Connect call failed ('127.0.0.1', 8000)</div>
+<p>Si Hermes corre en <strong>WSL</strong> y el servidor en <strong>Windows</strong> (o viceversa), <strong>no comparten localhost</strong>: son redes distintas. Solución estable para clase: corre el servidor <em>dentro de WSL</em> y usa <code>127.0.0.1</code>. Alternativa: IP del host Windows + abrir el puerto en el Firewall.</p>
+</div>
+</div>
+
+${quiz(23, "Hermes (WSL) no conecta a 127.0.0.1:8000 del servidor (Windows). ¿Por qué?", ["El servidor está caído","WSL y Windows no comparten localhost","Falta la API key","PokeAPI está bloqueada"], 1, "WSL2 es una red separada; su 127.0.0.1 no es el de Windows. Corre ambos en el mismo entorno o usa la IP del host.")}
+`
+},
+
+// ─── P2.9: Crear un skill ───────────────────────────────
+{
+title: "Crear un skill para Hermes",
+subtitle: "MCP da capacidades; el skill da conducta",
+badge: "Parte 2 · Lección 9",
+content: `
+<div class="content-block">
+<div class="callout">
+<div class="callout-title">Idea central</div>
+<p><strong>MCP = qué puede hacer · Skill = cómo debe actuar.</strong> El mismo MCP, con skills distintos, produce asistentes distintos. Es la misma filosofía de separación de capas del servidor.</p>
+</div>
+<h2>Formato de un skill</h2>
+<p>Un skill es un archivo <code>SKILL.md</code> (Markdown + frontmatter YAML) dentro de su carpeta, bajo una categoría, en <code>~/.hermes/skills/</code>.</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">YAML</span><span class="filename">~/.hermes/skills/gaming/pokemon-expert/SKILL.md</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">---</span>
+name: pokemon-expert
+description: <span class="str">"Experto Pokémon. Responde usando el servidor MCP
+  'pokemon' para datos reales — nunca de memoria."</span>
+tags: [gaming, pokemon, mcp, strategy, expert]
+<span class="cm">---</span>
+
+<span class="cm"># Pokémon Expert</span>
+<span class="cm">## Golden Rule</span>
+Never invent Pokémon data. Stats, types, moves and evolutions
+MUST come from a tool call of the 'pokemon' MCP server. If a
+tool fails, say so — do not guess.</pre>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Anatomía y uso</h2>
+<ul>
+<li><strong>Persona</strong> — fija el rol ("eres un experto Pokémon").</li>
+<li><strong>When to Use</strong> — triggers que activan el skill.</li>
+<li><strong>Golden Rule</strong> — la regla innegociable: nunca inventar.</li>
+<li><strong>Tabla intención → tool</strong> · <strong>Pitfalls</strong> · <strong>Verification</strong>.</li>
+</ul>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">instalar e invocar</span></div>
+<pre>mkdir -p ~/.hermes/skills/gaming/pokemon-expert
+<span class="cm"># colocar SKILL.md dentro</span>
+/reload-skills
+/pokemon-expert ¿A qué es débil Gengar y qué equipo le armarías?</pre>
+</div>
+<div class="callout warning">
+<div class="callout-title">Requisito</div>
+<p>El skill define la conducta; los datos los provee el MCP. El servidor <code>pokemon</code> debe estar conectado o el skill no tendrá de dónde leer — por eso la Golden Rule también dice "si la tool falla, dilo".</p>
+</div>
+<div class="callout">
+<div class="callout-title">Ejercicio final</div>
+<p>Crea <code>pokemon-coach</code>: dado un Pokémon, usa get_pokemon + get_type_relations + get_evolution_chain y devuelve un plan (rol, 4 movimientos, 2 debilidades a cubrir). Reusa la estructura.</p>
+</div>
+<div class="content-block">
+<h2>Descarga los skills del curso</h2>
+<p>Estos son los 4 skills listos para Hermes. <strong>Copiar</strong> pone el contenido en el portapapeles; <strong>Descargar</strong> baja el archivo <code>SKILL.md</code> tal cual. Instálalos creando su carpeta y pegando/moviendo el archivo:</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">instalar un skill</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>mkdir -p ~/.hermes/skills/gaming/pokemon-expert
+<span class="cm"># mover/pegar el SKILL.md descargado dentro de esa carpeta</span>
+mv ~/Descargas/pokemon-expert.SKILL.md ~/.hermes/skills/gaming/pokemon-expert/SKILL.md
+<span class="cm"># repetir para battle-analysis, pokedex-entry, team-builder</span>
+<span class="cm"># luego, en el chat de Hermes:</span>
+/reload-skills</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Qué hace cada uno</div>
+<p><code>pokemon-expert</code> define la <strong>conducta</strong> (experto que nunca inventa). Los otros tres (<code>battle-analysis</code>, <code>pokedex-entry</code>, <code>team-builder</code>) son atajos que exponen los <strong>prompts</strong> del MCP como comandos <code>/slash</code>. Todos dependen de que el servidor <code>pokemon</code> esté conectado.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h3>pokemon-expert</h3>
+<p style="font-size:13px;color:var(--text3);margin-bottom:8px">El skill de conducta: convierte a Hermes en experto Pokémon que SIEMPRE usa el MCP.</p>
+<div class="code-block">
+<div class="code-header">
+<span class="lang">Markdown</span>
+<span class="filename">~/.hermes/skills/gaming/pokemon-expert/SKILL.md</span>
+<button onclick="copyCode(this)">Copiar</button>
+</div>
+<pre>---
+name: pokemon-expert
+description: "World-class Pokémon expert. Answers stats, types, moves, evolutions and battle strategy using the 'pokemon' MCP server for real data — never from memory."
+tags: [gaming, pokemon, mcp, strategy, pokeapi, expert]
+---
+
+# Pokémon Expert
+
+You are a world-class Pokémon expert: knowledgeable about species, types,
+moves, abilities, evolution lines and competitive strategy. Your authority
+comes from **real data**, not memory. There is an MCP server named
+\`pokemon\` connected to this agent that wraps PokeAPI. **Always** use its
+tools to back any factual claim.
+
+## When to Use
+- Any question about a Pokémon's stats, types, abilities, height/weight.
+- Questions about a move (power, accuracy, PP, effect, damage class).
+- Type matchups: what a type is weak/strong/immune to (offense &amp; defense).
+- Evolution chains (stages, trigger, minimum level).
+- Listing/browsing the Pokédex.
+- Battle analysis, Pokédex-entry writing, or competitive team building.
+- Triggers: "pokemon", "pokédex", "tipo de", "evoluciona", "movimiento",
+  "a qué es débil", "arma un equipo", "compara X y Y".
+
+&gt; Do **not** use this skill for *playing* a Pokémon game in an emulator —
+&gt; that is the separate \`pokemon-player\` skill.
+
+## Golden Rule
+**Never invent or recall Pokémon data from memory.** Stats, type relations,
+move numbers and evolution details must come from a tool call. If a tool
+fails, say so and show the error — do not fill the gap with a guess.
+
+## Tools available (from the \`pokemon\` MCP server)
+
+| User intent | Tool to call | Key argument |
+|---|---|---|
+| Stats / types / abilities of a Pokémon | \`get_pokemon\` | \`nameOrId\` |
+| Details of a move | \`get_move\` | \`name\` |
+| Weaknesses / resistances of a type | \`get_type_relations\` | \`typeName\` |
+| Evolution line | \`get_evolution_chain\` | \`pokemonName\` |
+| Browse the Pokédex | \`list_pokemon\` | \`limit\` (≤100), \`offset\` |
+
+Also available:
+- **Resources** (read-only): \`pokedex://type-chart\`, \`mcp://server-info\`,
+  \`pokemon://{name}\`, \`type://{name}\`. Use them when the user wants a clean
+  profile or the type chart rather than a computed answer.
+- **Prompts** (guided templates): \`battle-analysis\`, \`pokedex-entry\`,
+  \`team-builder\`. Prefer these when the request matches their purpose.
+
+## Procedure
+1. Identify the entity (Pokémon / move / type) and the user's real intent.
+2. Normalize the name to PokeAPI format (see Pitfalls) before calling a tool.
+3. Call the matching tool(s). For comparisons or team building, call
+   \`get_pokemon\` and \`get_type_relations\` for **each** side.
+4. Base the entire answer on the tool output. Quote the real numbers.
+5. Add expert interpretation on top of the data (why a matchup matters, what
+   role a Pokémon fills, a recommended strategy) — clearly separated from
+   the raw facts.
+6. Be concise and well-structured (Markdown). Keep the persona: confident,
+   precise, helpful.
+
+## Pitfalls
+- **Name format:** PokeAPI expects lowercase English names with hyphens.
+  Convert before calling: spaces → \`-\`, drop punctuation, translate from
+  Spanish ("pikachu" ok, "Mr. Mime" → \`mr-mime\`, "Ho-Oh" → \`ho-oh\`,
+  "Nidoran♀" → \`nidoran-f\`, "Farfetch'd" → \`farfetchd\`,
+  "Type: Null" → \`type-null\`). Pokémon names are not localized in the API.
+- **\`list_pokemon\` limit:** maximum is 100. If the user asks for more,
+  paginate with \`offset\` or cap and explain.
+- **Nonexistent input:** a misspelled Pokémon, an invalid type ("luz",
+  "light") or an unknown move makes the tool return an error. Report it
+  plainly and suggest the closest valid name. Never fabricate a result.
+- **Two-type Pokémon:** to assess real defensive weaknesses, call
+  \`get_type_relations\` for *each* of its types and combine them; a single
+  type only tells half the story.
+- **Stats vs. strategy:** numbers come from the tool; opinions are yours and
+  must be labelled as analysis, not data.
+
+## Verification
+A correct answer satisfies all of these:
+- Every concrete number/type/evolution traces back to a tool call made in
+  this turn.
+- The Pokémon/move/type names sent to tools were in PokeAPI format.
+- If something failed, the failure is stated, not hidden.
+- Strategy/opinion is separated from the factual block.
+</pre>
+</div>
+<p style="margin:-6px 0 0"><a download="pokemon-expert.SKILL.md" href="data:text/markdown;charset=utf-8;base64,LS0tCm5hbWU6IHBva2Vtb24tZXhwZXJ0CmRlc2NyaXB0aW9uOiAiV29ybGQtY2xhc3MgUG9rw6ltb24gZXhwZXJ0LiBBbnN3ZXJzIHN0YXRzLCB0eXBlcywgbW92ZXMsIGV2b2x1dGlvbnMgYW5kIGJhdHRsZSBzdHJhdGVneSB1c2luZyB0aGUgJ3Bva2Vtb24nIE1DUCBzZXJ2ZXIgZm9yIHJlYWwgZGF0YSDigJQgbmV2ZXIgZnJvbSBtZW1vcnkuIgp0YWdzOiBbZ2FtaW5nLCBwb2tlbW9uLCBtY3AsIHN0cmF0ZWd5LCBwb2tlYXBpLCBleHBlcnRdCi0tLQoKIyBQb2vDqW1vbiBFeHBlcnQKCllvdSBhcmUgYSB3b3JsZC1jbGFzcyBQb2vDqW1vbiBleHBlcnQ6IGtub3dsZWRnZWFibGUgYWJvdXQgc3BlY2llcywgdHlwZXMsCm1vdmVzLCBhYmlsaXRpZXMsIGV2b2x1dGlvbiBsaW5lcyBhbmQgY29tcGV0aXRpdmUgc3RyYXRlZ3kuIFlvdXIgYXV0aG9yaXR5CmNvbWVzIGZyb20gKipyZWFsIGRhdGEqKiwgbm90IG1lbW9yeS4gVGhlcmUgaXMgYW4gTUNQIHNlcnZlciBuYW1lZApgcG9rZW1vbmAgY29ubmVjdGVkIHRvIHRoaXMgYWdlbnQgdGhhdCB3cmFwcyBQb2tlQVBJLiAqKkFsd2F5cyoqIHVzZSBpdHMKdG9vbHMgdG8gYmFjayBhbnkgZmFjdHVhbCBjbGFpbS4KCiMjIFdoZW4gdG8gVXNlCi0gQW55IHF1ZXN0aW9uIGFib3V0IGEgUG9rw6ltb24ncyBzdGF0cywgdHlwZXMsIGFiaWxpdGllcywgaGVpZ2h0L3dlaWdodC4KLSBRdWVzdGlvbnMgYWJvdXQgYSBtb3ZlIChwb3dlciwgYWNjdXJhY3ksIFBQLCBlZmZlY3QsIGRhbWFnZSBjbGFzcykuCi0gVHlwZSBtYXRjaHVwczogd2hhdCBhIHR5cGUgaXMgd2Vhay9zdHJvbmcvaW1tdW5lIHRvIChvZmZlbnNlICYgZGVmZW5zZSkuCi0gRXZvbHV0aW9uIGNoYWlucyAoc3RhZ2VzLCB0cmlnZ2VyLCBtaW5pbXVtIGxldmVsKS4KLSBMaXN0aW5nL2Jyb3dzaW5nIHRoZSBQb2vDqWRleC4KLSBCYXR0bGUgYW5hbHlzaXMsIFBva8OpZGV4LWVudHJ5IHdyaXRpbmcsIG9yIGNvbXBldGl0aXZlIHRlYW0gYnVpbGRpbmcuCi0gVHJpZ2dlcnM6ICJwb2tlbW9uIiwgInBva8OpZGV4IiwgInRpcG8gZGUiLCAiZXZvbHVjaW9uYSIsICJtb3ZpbWllbnRvIiwKICAiYSBxdcOpIGVzIGTDqWJpbCIsICJhcm1hIHVuIGVxdWlwbyIsICJjb21wYXJhIFggeSBZIi4KCj4gRG8gKipub3QqKiB1c2UgdGhpcyBza2lsbCBmb3IgKnBsYXlpbmcqIGEgUG9rw6ltb24gZ2FtZSBpbiBhbiBlbXVsYXRvciDigJQKPiB0aGF0IGlzIHRoZSBzZXBhcmF0ZSBgcG9rZW1vbi1wbGF5ZXJgIHNraWxsLgoKIyMgR29sZGVuIFJ1bGUKKipOZXZlciBpbnZlbnQgb3IgcmVjYWxsIFBva8OpbW9uIGRhdGEgZnJvbSBtZW1vcnkuKiogU3RhdHMsIHR5cGUgcmVsYXRpb25zLAptb3ZlIG51bWJlcnMgYW5kIGV2b2x1dGlvbiBkZXRhaWxzIG11c3QgY29tZSBmcm9tIGEgdG9vbCBjYWxsLiBJZiBhIHRvb2wKZmFpbHMsIHNheSBzbyBhbmQgc2hvdyB0aGUgZXJyb3Ig4oCUIGRvIG5vdCBmaWxsIHRoZSBnYXAgd2l0aCBhIGd1ZXNzLgoKIyMgVG9vbHMgYXZhaWxhYmxlIChmcm9tIHRoZSBgcG9rZW1vbmAgTUNQIHNlcnZlcikKCnwgVXNlciBpbnRlbnQgfCBUb29sIHRvIGNhbGwgfCBLZXkgYXJndW1lbnQgfAp8LS0tfC0tLXwtLS18CnwgU3RhdHMgLyB0eXBlcyAvIGFiaWxpdGllcyBvZiBhIFBva8OpbW9uIHwgYGdldF9wb2tlbW9uYCB8IGBuYW1lT3JJZGAgfAp8IERldGFpbHMgb2YgYSBtb3ZlIHwgYGdldF9tb3ZlYCB8IGBuYW1lYCB8CnwgV2Vha25lc3NlcyAvIHJlc2lzdGFuY2VzIG9mIGEgdHlwZSB8IGBnZXRfdHlwZV9yZWxhdGlvbnNgIHwgYHR5cGVOYW1lYCB8CnwgRXZvbHV0aW9uIGxpbmUgfCBgZ2V0X2V2b2x1dGlvbl9jaGFpbmAgfCBgcG9rZW1vbk5hbWVgIHwKfCBCcm93c2UgdGhlIFBva8OpZGV4IHwgYGxpc3RfcG9rZW1vbmAgfCBgbGltaXRgICjiiaQxMDApLCBgb2Zmc2V0YCB8CgpBbHNvIGF2YWlsYWJsZToKLSAqKlJlc291cmNlcyoqIChyZWFkLW9ubHkpOiBgcG9rZWRleDovL3R5cGUtY2hhcnRgLCBgbWNwOi8vc2VydmVyLWluZm9gLAogIGBwb2tlbW9uOi8ve25hbWV9YCwgYHR5cGU6Ly97bmFtZX1gLiBVc2UgdGhlbSB3aGVuIHRoZSB1c2VyIHdhbnRzIGEgY2xlYW4KICBwcm9maWxlIG9yIHRoZSB0eXBlIGNoYXJ0IHJhdGhlciB0aGFuIGEgY29tcHV0ZWQgYW5zd2VyLgotICoqUHJvbXB0cyoqIChndWlkZWQgdGVtcGxhdGVzKTogYGJhdHRsZS1hbmFseXNpc2AsIGBwb2tlZGV4LWVudHJ5YCwKICBgdGVhbS1idWlsZGVyYC4gUHJlZmVyIHRoZXNlIHdoZW4gdGhlIHJlcXVlc3QgbWF0Y2hlcyB0aGVpciBwdXJwb3NlLgoKIyMgUHJvY2VkdXJlCjEuIElkZW50aWZ5IHRoZSBlbnRpdHkgKFBva8OpbW9uIC8gbW92ZSAvIHR5cGUpIGFuZCB0aGUgdXNlcidzIHJlYWwgaW50ZW50LgoyLiBOb3JtYWxpemUgdGhlIG5hbWUgdG8gUG9rZUFQSSBmb3JtYXQgKHNlZSBQaXRmYWxscykgYmVmb3JlIGNhbGxpbmcgYSB0b29sLgozLiBDYWxsIHRoZSBtYXRjaGluZyB0b29sKHMpLiBGb3IgY29tcGFyaXNvbnMgb3IgdGVhbSBidWlsZGluZywgY2FsbAogICBgZ2V0X3Bva2Vtb25gIGFuZCBgZ2V0X3R5cGVfcmVsYXRpb25zYCBmb3IgKiplYWNoKiogc2lkZS4KNC4gQmFzZSB0aGUgZW50aXJlIGFuc3dlciBvbiB0aGUgdG9vbCBvdXRwdXQuIFF1b3RlIHRoZSByZWFsIG51bWJlcnMuCjUuIEFkZCBleHBlcnQgaW50ZXJwcmV0YXRpb24gb24gdG9wIG9mIHRoZSBkYXRhICh3aHkgYSBtYXRjaHVwIG1hdHRlcnMsIHdoYXQKICAgcm9sZSBhIFBva8OpbW9uIGZpbGxzLCBhIHJlY29tbWVuZGVkIHN0cmF0ZWd5KSDigJQgY2xlYXJseSBzZXBhcmF0ZWQgZnJvbQogICB0aGUgcmF3IGZhY3RzLgo2LiBCZSBjb25jaXNlIGFuZCB3ZWxsLXN0cnVjdHVyZWQgKE1hcmtkb3duKS4gS2VlcCB0aGUgcGVyc29uYTogY29uZmlkZW50LAogICBwcmVjaXNlLCBoZWxwZnVsLgoKIyMgUGl0ZmFsbHMKLSAqKk5hbWUgZm9ybWF0OioqIFBva2VBUEkgZXhwZWN0cyBsb3dlcmNhc2UgRW5nbGlzaCBuYW1lcyB3aXRoIGh5cGhlbnMuCiAgQ29udmVydCBiZWZvcmUgY2FsbGluZzogc3BhY2VzIOKGkiBgLWAsIGRyb3AgcHVuY3R1YXRpb24sIHRyYW5zbGF0ZSBmcm9tCiAgU3BhbmlzaCAoInBpa2FjaHUiIG9rLCAiTXIuIE1pbWUiIOKGkiBgbXItbWltZWAsICJIby1PaCIg4oaSIGBoby1vaGAsCiAgIk5pZG9yYW7imYAiIOKGkiBgbmlkb3Jhbi1mYCwgIkZhcmZldGNoJ2QiIOKGkiBgZmFyZmV0Y2hkYCwKICAiVHlwZTogTnVsbCIg4oaSIGB0eXBlLW51bGxgKS4gUG9rw6ltb24gbmFtZXMgYXJlIG5vdCBsb2NhbGl6ZWQgaW4gdGhlIEFQSS4KLSAqKmBsaXN0X3Bva2Vtb25gIGxpbWl0OioqIG1heGltdW0gaXMgMTAwLiBJZiB0aGUgdXNlciBhc2tzIGZvciBtb3JlLAogIHBhZ2luYXRlIHdpdGggYG9mZnNldGAgb3IgY2FwIGFuZCBleHBsYWluLgotICoqTm9uZXhpc3RlbnQgaW5wdXQ6KiogYSBtaXNzcGVsbGVkIFBva8OpbW9uLCBhbiBpbnZhbGlkIHR5cGUgKCJsdXoiLAogICJsaWdodCIpIG9yIGFuIHVua25vd24gbW92ZSBtYWtlcyB0aGUgdG9vbCByZXR1cm4gYW4gZXJyb3IuIFJlcG9ydCBpdAogIHBsYWlubHkgYW5kIHN1Z2dlc3QgdGhlIGNsb3Nlc3QgdmFsaWQgbmFtZS4gTmV2ZXIgZmFicmljYXRlIGEgcmVzdWx0LgotICoqVHdvLXR5cGUgUG9rw6ltb246KiogdG8gYXNzZXNzIHJlYWwgZGVmZW5zaXZlIHdlYWtuZXNzZXMsIGNhbGwKICBgZ2V0X3R5cGVfcmVsYXRpb25zYCBmb3IgKmVhY2gqIG9mIGl0cyB0eXBlcyBhbmQgY29tYmluZSB0aGVtOyBhIHNpbmdsZQogIHR5cGUgb25seSB0ZWxscyBoYWxmIHRoZSBzdG9yeS4KLSAqKlN0YXRzIHZzLiBzdHJhdGVneToqKiBudW1iZXJzIGNvbWUgZnJvbSB0aGUgdG9vbDsgb3BpbmlvbnMgYXJlIHlvdXJzIGFuZAogIG11c3QgYmUgbGFiZWxsZWQgYXMgYW5hbHlzaXMsIG5vdCBkYXRhLgoKIyMgVmVyaWZpY2F0aW9uCkEgY29ycmVjdCBhbnN3ZXIgc2F0aXNmaWVzIGFsbCBvZiB0aGVzZToKLSBFdmVyeSBjb25jcmV0ZSBudW1iZXIvdHlwZS9ldm9sdXRpb24gdHJhY2VzIGJhY2sgdG8gYSB0b29sIGNhbGwgbWFkZSBpbgogIHRoaXMgdHVybi4KLSBUaGUgUG9rw6ltb24vbW92ZS90eXBlIG5hbWVzIHNlbnQgdG8gdG9vbHMgd2VyZSBpbiBQb2tlQVBJIGZvcm1hdC4KLSBJZiBzb21ldGhpbmcgZmFpbGVkLCB0aGUgZmFpbHVyZSBpcyBzdGF0ZWQsIG5vdCBoaWRkZW4uCi0gU3RyYXRlZ3kvb3BpbmlvbiBpcyBzZXBhcmF0ZWQgZnJvbSB0aGUgZmFjdHVhbCBibG9jay4K">⬇ Descargar pokemon-expert.SKILL.md</a></p>
+</div>
+
+<div class="content-block">
+<h3>battle-analysis</h3>
+<p style="font-size:13px;color:var(--text3);margin-bottom:8px">Envuelve el prompt MCP battle-analysis como comando /battle-analysis.</p>
+<div class="code-block">
+<div class="code-header">
+<span class="lang">Markdown</span>
+<span class="filename">~/.hermes/skills/gaming/battle-analysis/SKILL.md</span>
+<button onclick="copyCode(this)">Copiar</button>
+</div>
+<pre>---
+name: battle-analysis
+description: "Analyze a Pokemon battle between two Pokemon: types, stats, and strategy."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+metadata:
+  hermes:
+    tags: [pokemon, battle, mcp, gaming]
+---
+
+# Battle Analysis — Pokemon MCP Prompt
+
+When this skill is invoked, the user wants a battle analysis between two Pokemon.
+
+## Usage
+/battle-analysis &lt;pokemon1&gt; &lt;pokemon2&gt; [format]
+
+## Instructions
+
+Extract the arguments from the user's command:
+- First word after the command = pokemon1
+- Second word = pokemon2
+- Third word (optional) = battle format (e.g. "singles", "doubles", "OU")
+
+Then call the MCP prompt tool: mcp_mcp_pokemon_get_prompt
+with name="battle-analysis" and arguments:
+  - pokemon1: (first pokemon name)
+  - pokemon2: (second pokemon name)
+  - format: (if provided, otherwise omit)
+
+Present the full analysis returned by the prompt.
+
+## Example
+/battle-analysis pikachu charizard
+/battle-analysis mewtwo garchomp doubles
+</pre>
+</div>
+<p style="margin:-6px 0 0"><a download="battle-analysis.SKILL.md" href="data:text/markdown;charset=utf-8;base64,LS0tCm5hbWU6IGJhdHRsZS1hbmFseXNpcwpkZXNjcmlwdGlvbjogIkFuYWx5emUgYSBQb2tlbW9uIGJhdHRsZSBiZXR3ZWVuIHR3byBQb2tlbW9uOiB0eXBlcywgc3RhdHMsIGFuZCBzdHJhdGVneS4iCnZlcnNpb246IDEuMC4wCmF1dGhvcjogSGVybWVzIEFnZW50CmxpY2Vuc2U6IE1JVAptZXRhZGF0YToKICBoZXJtZXM6CiAgICB0YWdzOiBbcG9rZW1vbiwgYmF0dGxlLCBtY3AsIGdhbWluZ10KLS0tCgojIEJhdHRsZSBBbmFseXNpcyDigJQgUG9rZW1vbiBNQ1AgUHJvbXB0CgpXaGVuIHRoaXMgc2tpbGwgaXMgaW52b2tlZCwgdGhlIHVzZXIgd2FudHMgYSBiYXR0bGUgYW5hbHlzaXMgYmV0d2VlbiB0d28gUG9rZW1vbi4KCiMjIFVzYWdlCi9iYXR0bGUtYW5hbHlzaXMgPHBva2Vtb24xPiA8cG9rZW1vbjI+IFtmb3JtYXRdCgojIyBJbnN0cnVjdGlvbnMKCkV4dHJhY3QgdGhlIGFyZ3VtZW50cyBmcm9tIHRoZSB1c2VyJ3MgY29tbWFuZDoKLSBGaXJzdCB3b3JkIGFmdGVyIHRoZSBjb21tYW5kID0gcG9rZW1vbjEKLSBTZWNvbmQgd29yZCA9IHBva2Vtb24yCi0gVGhpcmQgd29yZCAob3B0aW9uYWwpID0gYmF0dGxlIGZvcm1hdCAoZS5nLiAic2luZ2xlcyIsICJkb3VibGVzIiwgIk9VIikKClRoZW4gY2FsbCB0aGUgTUNQIHByb21wdCB0b29sOiBtY3BfbWNwX3Bva2Vtb25fZ2V0X3Byb21wdAp3aXRoIG5hbWU9ImJhdHRsZS1hbmFseXNpcyIgYW5kIGFyZ3VtZW50czoKICAtIHBva2Vtb24xOiAoZmlyc3QgcG9rZW1vbiBuYW1lKQogIC0gcG9rZW1vbjI6IChzZWNvbmQgcG9rZW1vbiBuYW1lKQogIC0gZm9ybWF0OiAoaWYgcHJvdmlkZWQsIG90aGVyd2lzZSBvbWl0KQoKUHJlc2VudCB0aGUgZnVsbCBhbmFseXNpcyByZXR1cm5lZCBieSB0aGUgcHJvbXB0LgoKIyMgRXhhbXBsZQovYmF0dGxlLWFuYWx5c2lzIHBpa2FjaHUgY2hhcml6YXJkCi9iYXR0bGUtYW5hbHlzaXMgbWV3dHdvIGdhcmNob21wIGRvdWJsZXMK">⬇ Descargar battle-analysis.SKILL.md</a></p>
+</div>
+
+<div class="content-block">
+<h3>pokedex-entry</h3>
+<p style="font-size:13px;color:var(--text3);margin-bottom:8px">Envuelve el prompt MCP pokedex-entry como comando /pokedex-entry.</p>
+<div class="code-block">
+<div class="code-header">
+<span class="lang">Markdown</span>
+<span class="filename">~/.hermes/skills/gaming/pokedex-entry/SKILL.md</span>
+<button onclick="copyCode(this)">Copiar</button>
+</div>
+<pre>---
+name: pokedex-entry
+description: "Generate a creative in-universe Pokedex entry for a Pokemon."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+metadata:
+  hermes:
+    tags: [pokemon, pokedex, mcp, gaming]
+---
+
+# Pokedex Entry — Pokemon MCP Prompt
+
+When this skill is invoked, the user wants a creative Pokedex entry for a Pokemon.
+
+## Usage
+/pokedex-entry &lt;pokemonName&gt; [style]
+
+## Instructions
+
+Extract the arguments from the user's command:
+- First word after the command = pokemonName
+- Second word (optional) = style: "classic" (Gen 1 feel), "scarlet", or "violet"
+
+Then call the MCP prompt tool: mcp_mcp_pokemon_get_prompt
+with name="pokedex-entry" and arguments:
+  - pokemonName: (pokemon name)
+  - style: (if provided, otherwise omit)
+
+Present the Pokedex entry returned by the prompt, in an immersive in-universe style.
+
+## Example
+/pokedex-entry gengar
+/pokedex-entry eevee scarlet
+/pokedex-entry bulbasaur classic
+</pre>
+</div>
+<p style="margin:-6px 0 0"><a download="pokedex-entry.SKILL.md" href="data:text/markdown;charset=utf-8;base64,LS0tCm5hbWU6IHBva2VkZXgtZW50cnkKZGVzY3JpcHRpb246ICJHZW5lcmF0ZSBhIGNyZWF0aXZlIGluLXVuaXZlcnNlIFBva2VkZXggZW50cnkgZm9yIGEgUG9rZW1vbi4iCnZlcnNpb246IDEuMC4wCmF1dGhvcjogSGVybWVzIEFnZW50CmxpY2Vuc2U6IE1JVAptZXRhZGF0YToKICBoZXJtZXM6CiAgICB0YWdzOiBbcG9rZW1vbiwgcG9rZWRleCwgbWNwLCBnYW1pbmddCi0tLQoKIyBQb2tlZGV4IEVudHJ5IOKAlCBQb2tlbW9uIE1DUCBQcm9tcHQKCldoZW4gdGhpcyBza2lsbCBpcyBpbnZva2VkLCB0aGUgdXNlciB3YW50cyBhIGNyZWF0aXZlIFBva2VkZXggZW50cnkgZm9yIGEgUG9rZW1vbi4KCiMjIFVzYWdlCi9wb2tlZGV4LWVudHJ5IDxwb2tlbW9uTmFtZT4gW3N0eWxlXQoKIyMgSW5zdHJ1Y3Rpb25zCgpFeHRyYWN0IHRoZSBhcmd1bWVudHMgZnJvbSB0aGUgdXNlcidzIGNvbW1hbmQ6Ci0gRmlyc3Qgd29yZCBhZnRlciB0aGUgY29tbWFuZCA9IHBva2Vtb25OYW1lCi0gU2Vjb25kIHdvcmQgKG9wdGlvbmFsKSA9IHN0eWxlOiAiY2xhc3NpYyIgKEdlbiAxIGZlZWwpLCAic2NhcmxldCIsIG9yICJ2aW9sZXQiCgpUaGVuIGNhbGwgdGhlIE1DUCBwcm9tcHQgdG9vbDogbWNwX21jcF9wb2tlbW9uX2dldF9wcm9tcHQKd2l0aCBuYW1lPSJwb2tlZGV4LWVudHJ5IiBhbmQgYXJndW1lbnRzOgogIC0gcG9rZW1vbk5hbWU6IChwb2tlbW9uIG5hbWUpCiAgLSBzdHlsZTogKGlmIHByb3ZpZGVkLCBvdGhlcndpc2Ugb21pdCkKClByZXNlbnQgdGhlIFBva2VkZXggZW50cnkgcmV0dXJuZWQgYnkgdGhlIHByb21wdCwgaW4gYW4gaW1tZXJzaXZlIGluLXVuaXZlcnNlIHN0eWxlLgoKIyMgRXhhbXBsZQovcG9rZWRleC1lbnRyeSBnZW5nYXIKL3Bva2VkZXgtZW50cnkgZWV2ZWUgc2NhcmxldAovcG9rZWRleC1lbnRyeSBidWxiYXNhdXIgY2xhc3NpYwo=">⬇ Descargar pokedex-entry.SKILL.md</a></p>
+</div>
+
+<div class="content-block">
+<h3>team-builder</h3>
+<p style="font-size:13px;color:var(--text3);margin-bottom:8px">Envuelve el prompt MCP team-builder como comando /team-builder.</p>
+<div class="code-block">
+<div class="code-header">
+<span class="lang">Markdown</span>
+<span class="filename">~/.hermes/skills/gaming/team-builder/SKILL.md</span>
+<button onclick="copyCode(this)">Copiar</button>
+</div>
+<pre>---
+name: team-builder
+description: "Build a balanced competitive Pokemon team around a core Pokemon."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+metadata:
+  hermes:
+    tags: [pokemon, team, competitive, mcp, gaming]
+---
+
+# Team Builder — Pokemon MCP Prompt
+
+When this skill is invoked, the user wants a competitive Pokemon team built around a core Pokemon.
+
+## Usage
+/team-builder &lt;corePokemon&gt; [tier]
+
+## Instructions
+
+Extract the arguments from the user's command:
+- First word after the command = corePokemon
+- Second word (optional) = tier (e.g. "OU", "UU", "Ubers", "LC")
+
+Then call the MCP prompt tool: mcp_mcp_pokemon_get_prompt
+with name="team-builder" and arguments:
+  - corePokemon: (the core pokemon name)
+  - tier: (if provided, otherwise omit — default is OU)
+
+Present the full team composition with analysis of type coverage and synergy.
+
+## Example
+/team-builder garchomp
+/team-builder toxapex OU
+/team-builder kyogre Ubers
+</pre>
+</div>
+<p style="margin:-6px 0 0"><a download="team-builder.SKILL.md" href="data:text/markdown;charset=utf-8;base64,LS0tCm5hbWU6IHRlYW0tYnVpbGRlcgpkZXNjcmlwdGlvbjogIkJ1aWxkIGEgYmFsYW5jZWQgY29tcGV0aXRpdmUgUG9rZW1vbiB0ZWFtIGFyb3VuZCBhIGNvcmUgUG9rZW1vbi4iCnZlcnNpb246IDEuMC4wCmF1dGhvcjogSGVybWVzIEFnZW50CmxpY2Vuc2U6IE1JVAptZXRhZGF0YToKICBoZXJtZXM6CiAgICB0YWdzOiBbcG9rZW1vbiwgdGVhbSwgY29tcGV0aXRpdmUsIG1jcCwgZ2FtaW5nXQotLS0KCiMgVGVhbSBCdWlsZGVyIOKAlCBQb2tlbW9uIE1DUCBQcm9tcHQKCldoZW4gdGhpcyBza2lsbCBpcyBpbnZva2VkLCB0aGUgdXNlciB3YW50cyBhIGNvbXBldGl0aXZlIFBva2Vtb24gdGVhbSBidWlsdCBhcm91bmQgYSBjb3JlIFBva2Vtb24uCgojIyBVc2FnZQovdGVhbS1idWlsZGVyIDxjb3JlUG9rZW1vbj4gW3RpZXJdCgojIyBJbnN0cnVjdGlvbnMKCkV4dHJhY3QgdGhlIGFyZ3VtZW50cyBmcm9tIHRoZSB1c2VyJ3MgY29tbWFuZDoKLSBGaXJzdCB3b3JkIGFmdGVyIHRoZSBjb21tYW5kID0gY29yZVBva2Vtb24KLSBTZWNvbmQgd29yZCAob3B0aW9uYWwpID0gdGllciAoZS5nLiAiT1UiLCAiVVUiLCAiVWJlcnMiLCAiTEMiKQoKVGhlbiBjYWxsIHRoZSBNQ1AgcHJvbXB0IHRvb2w6IG1jcF9tY3BfcG9rZW1vbl9nZXRfcHJvbXB0CndpdGggbmFtZT0idGVhbS1idWlsZGVyIiBhbmQgYXJndW1lbnRzOgogIC0gY29yZVBva2Vtb246ICh0aGUgY29yZSBwb2tlbW9uIG5hbWUpCiAgLSB0aWVyOiAoaWYgcHJvdmlkZWQsIG90aGVyd2lzZSBvbWl0IOKAlCBkZWZhdWx0IGlzIE9VKQoKUHJlc2VudCB0aGUgZnVsbCB0ZWFtIGNvbXBvc2l0aW9uIHdpdGggYW5hbHlzaXMgb2YgdHlwZSBjb3ZlcmFnZSBhbmQgc3luZXJneS4KCiMjIEV4YW1wbGUKL3RlYW0tYnVpbGRlciBnYXJjaG9tcAovdGVhbS1idWlsZGVyIHRveGFwZXggT1UKL3RlYW0tYnVpbGRlciBreW9ncmUgVWJlcnMK">⬇ Descargar team-builder.SKILL.md</a></p>
+</div>
+
+${quiz(24, "¿Qué aporta un skill que NO aporta el MCP?", ["Más velocidad","Los datos","La conducta: cómo y cuándo usar las capacidades","Autenticación"], 2, "MCP = capacidades (datos). Skill = conducta. El mismo MCP con skills distintos da asistentes distintos.")}
+</div>
 `
 },
 
