@@ -476,7 +476,7 @@ body::before{display:none}
 <circle class="pr-bg" cx="22" cy="22" r="19"></circle>
 <circle class="pr-fg" id="progressRing" cx="22" cy="22" r="19"></circle>
 </svg>
-<div class="progress-text" id="progressText">0 de 22 lecciones completadas</div>
+<div class="progress-text" id="progressText">0 de 23 lecciones completadas</div>
 </div>
 <div class="nav-search-wrap"><input id="navSearch" class="nav-search" type="search" placeholder="Buscar lección…" aria-label="Buscar lección"></div>
 
@@ -511,17 +511,18 @@ body::before{display:none}
 <div class="nav-item" onclick="goTo(14)"><span class="nav-dot"></span>Resources y Prompts</div>
 <div class="nav-item" onclick="goTo(15)"><span class="nav-dot"></span>Transporte y sesiones</div>
 <div class="nav-item" onclick="goTo(16)"><span class="nav-dot"></span>Anatomía de index.ts</div>
-<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
-<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
+<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Anatomía de resources.ts</div>
+<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
+<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Parte 2 · Agentes</div>
-<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
-<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Crear un skill</div>
+<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
+<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Crear un skill</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Cierre</div>
-<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Certificación</div>
+<div class="nav-item" onclick="goTo(22)"><span class="nav-dot"></span>Certificación</div>
 </div>
 </aside>
 
@@ -2261,11 +2262,151 @@ ${quiz(26, "En index.ts, ¿qué dos llamadas son la frontera Express ↔ MCP?", 
 `
 },
 
+// ─── P2.6c: Anatomía de resources/index.ts ──────────────
+{
+title: "Anatomía de resources/index.ts",
+subtitle: "Cómo se registran resources estáticos y plantillas dinámicas",
+badge: "Parte 2 · Lección 8",
+content: `
+<div class="content-block">
+<h2>Recordatorio: qué es un Resource</h2>
+<p>Un <strong>Resource</strong> es una fuente de datos <strong>de solo lectura</strong> identificada por una <strong>URI</strong>. A diferencia de una Tool, <strong>no recibe argumentos</strong>: el cliente la abre como si fuera un archivo. Hay dos tipos:</p>
+<div class="concept-grid">
+<div class="concept-card resource"><span class="icon">📌</span><h4>Estático</h4><p>URI fija, contenido fijo. Ej: <code>pokedex://type-chart</code>.</p></div>
+<div class="concept-card resource"><span class="icon">🔗</span><h4>Plantilla</h4><p>URI con parámetro. Ej: <code>pokemon://{name}</code>.</p></div>
+</div>
+<div class="callout">
+<div class="callout-title">Capa sin Express</div>
+<p><code>resources/index.ts</code> solo conoce el McpServer y la capa API. No sabe nada de HTTP ni de sesiones — pura separación de capas.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>1 · Imports y datos</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">src/resources/index.ts</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="kw">import</span> { McpServer, ResourceTemplate } <span class="kw">from</span> <span class="str">"@modelcontextprotocol/sdk/server/mcp.js"</span>;
+<span class="kw">import</span> { getPokemon, getTypeRelations } <span class="kw">from</span> <span class="str">"../api/pokeapi"</span>;  <span class="cm">// capa API</span>
+
+<span class="cm">// Los 18 tipos canónicos (dato del resource estático)</span>
+<span class="kw">const</span> ALL_TYPES = [<span class="str">"normal"</span>, <span class="str">"fire"</span>, <span class="str">"water"</span>, <span class="cm">/* ... */</span> <span class="str">"fairy"</span>];
+
+<span class="kw">export function</span> <span class="fn">registerResources</span>(server: <span class="type">McpServer</span>): <span class="type">void</span> {
+  <span class="cm">// se registran los 4 resources sobre el server...</span>
+}</pre>
+</div>
+<p><code>ResourceTemplate</code> es la clase del SDK para URIs con parámetros. <code>registerResources(server)</code> recibe el McpServer y le cuelga los recursos (igual patrón que <code>registerTools</code>).</p>
+</div>
+
+<div class="content-block">
+<h2>2 · Resource estático — type-chart</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">Resource estático</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>server.<span class="fn">registerResource</span>(
+  <span class="str">"type-chart"</span>,                 <span class="cm">// nombre interno</span>
+  <span class="str">"pokedex://type-chart"</span>,        <span class="cm">// URI FIJA (string)</span>
+  { description: <span class="str">"Lista de los 18 tipos..."</span>, mimeType: <span class="str">"text/plain"</span> },
+  <span class="kw">async</span> () =&gt; ({                   <span class="cm">// handler SIN argumentos</span>
+    contents: [{
+      uri: <span class="str">"pokedex://type-chart"</span>,
+      mimeType: <span class="str">"text/plain"</span>,
+      text: ALL_TYPES.<span class="fn">map</span>((t, i) =&gt; (i + 1) + <span class="str">". "</span> + t).<span class="fn">join</span>(<span class="str">"\\n"</span>)
+    }]
+  })
+);</pre>
+</div>
+<p>Cuando el 2º argumento es un <strong>string</strong>, es un resource <strong>estático</strong>. El handler no recibe parámetros y siempre devuelve lo mismo. La respuesta es un objeto con un array <code>contents</code>.</p>
+</div>
+
+<div class="content-block">
+<h2>3 · Resource estático — server-info (JSON)</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">Metadatos del servidor</span></div>
+<pre>server.<span class="fn">registerResource</span>(
+  <span class="str">"server-info"</span>, <span class="str">"mcp://server-info"</span>,
+  { mimeType: <span class="str">"application/json"</span> },
+  <span class="kw">async</span> () =&gt; ({ contents: [{
+    uri: <span class="str">"mcp://server-info"</span>, mimeType: <span class="str">"application/json"</span>,
+    text: <span class="type">JSON</span>.<span class="fn">stringify</span>({ name: <span class="str">"pokemon-mcp-server"</span>,
+      tools: [<span class="str">"get_pokemon"</span>, <span class="cm">/* ... */</span>],
+      resources: [<span class="cm">/* ... */</span>], prompts: [<span class="cm">/* ... */</span>] }, <span class="kw">null</span>, <span class="num">2</span>)
+  }] })
+);</pre>
+</div>
+<p>Mismo patrón, pero <code>mimeType: application/json</code> y el <code>text</code> es un JSON serializado: un "acerca de" legible por el agente.</p>
+</div>
+
+<div class="content-block">
+<h2>4 · Resource plantilla — pokemon://{name}</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">Plantilla dinámica</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>server.<span class="fn">registerResource</span>(
+  <span class="str">"pokemon-profile"</span>,
+  <span class="kw">new</span> <span class="fn">ResourceTemplate</span>(<span class="str">"pokemon://{name}"</span>, { list: <span class="kw">undefined</span> }),  <span class="cm">// URI con {name}</span>
+  { mimeType: <span class="str">"text/plain"</span> },
+  <span class="kw">async</span> (uri, { name }) =&gt; {                  <span class="cm">// 2º arg = params extraídos</span>
+    <span class="kw">const</span> pokemonName = <span class="type">Array</span>.<span class="fn">isArray</span>(name) ? name[<span class="num">0</span>] : name;  <span class="cm">// guard</span>
+    <span class="kw">const</span> p = <span class="kw">await</span> <span class="fn">getPokemon</span>(pokemonName);          <span class="cm">// capa API</span>
+    <span class="kw">return</span> { contents: [{
+      uri: uri.href,                            <span class="cm">// la URI concreta solicitada</span>
+      mimeType: <span class="str">"text/plain"</span>,
+      text: <span class="fn">renderProfile</span>(p)                    <span class="cm">// stats con barras █</span>
+    }] };
+  }
+);</pre>
+</div>
+<div class="callout warning">
+<div class="callout-title">El guard Array.isArray(name)</div>
+<p>El SDK puede entregar el parámetro como <code>string</code> o como <code>string[]</code> según el patrón de URI. <code>Array.isArray(name) ? name[0] : name</code> normaliza ambos casos. Olvidarlo provoca llamadas tipo <code>getPokemon(['pikachu'])</code> que fallan.</p>
+</div>
+<p>Cuando el 2º argumento es un <code>ResourceTemplate</code>, es una <strong>plantilla</strong>: el SDK matchea la URI pedida (<code>pokemon://gengar</code>), extrae <code>{name}</code> y lo pasa al handler. <code>uri.href</code> es la URI concreta que solicitó el cliente.</p>
+</div>
+
+<div class="content-block">
+<h2>5 · Resource plantilla — type://{name}</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">type://{name}</span></div>
+<pre>server.<span class="fn">registerResource</span>(
+  <span class="str">"type-detail"</span>,
+  <span class="kw">new</span> <span class="fn">ResourceTemplate</span>(<span class="str">"type://{name}"</span>, { list: <span class="kw">undefined</span> }),
+  { mimeType: <span class="str">"text/plain"</span> },
+  <span class="kw">async</span> (uri, { name }) =&gt; {
+    <span class="kw">const</span> typeName = <span class="type">Array</span>.<span class="fn">isArray</span>(name) ? name[<span class="num">0</span>] : name;
+    <span class="kw">const</span> rel = <span class="kw">await</span> <span class="fn">getTypeRelations</span>(typeName);   <span class="cm">// capa API</span>
+    <span class="kw">return</span> { contents: [{ uri: uri.href, mimeType: <span class="str">"text/plain"</span>,
+      text: <span class="fn">renderRelations</span>(rel) }] };
+  }
+);</pre>
+</div>
+<p>Idéntico patrón al anterior: mismo guard, llama a la capa API y devuelve <code>contents</code>. La lógica de PokeAPI vive en <code>api/pokeapi.ts</code>, no aquí.</p>
+</div>
+
+<div class="content-block">
+<h2>Forma de la respuesta y flujo de lectura</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Flujo</span><span class="filename">readResource</span></div>
+<pre>Cliente: readResource("pokemon://gengar")
+  -&gt; SDK matchea la URI contra las plantillas registradas
+  -&gt; extrae { name: "gengar" }  e invoca el handler
+  -&gt; handler llama getPokemon("gengar")  (capa API -&gt; PokeAPI)
+  -&gt; devuelve { contents: [ { uri, mimeType, text } ] }
+Cliente recibe el contenido (texto/JSON) listo para usar como contexto</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Tool vs Resource (recordatorio)</div>
+<p>La misma fuente (PokeAPI) se expone como Tool (<code>get_pokemon</code>, la invoca el modelo con argumentos) y como Resource (<code>pokemon://gengar</code>, la abre el cliente por URI, sin argumentos). Distinto control, misma capa API debajo.</p>
+</div>
+</div>
+
+${quiz(27, "¿Cómo distingue registerResource un resource estático de una plantilla?", ["Por el mimeType","Por el nombre interno","Por el 2º argumento: un string es estático; un ResourceTemplate es plantilla","Las plantillas usan registerTemplate, no registerResource"], 2, "Si el 2º argumento es un string la URI es fija (estático); si es un ResourceTemplate, el SDK extrae los parámetros y los pasa al handler.")}
+`
+},
+
 // ─── P2.7: Ejecutar y desplegar ─────────────────────────
 {
 title: "Ejecutar, probar y desplegar",
 subtitle: "npm, cliente de prueba, dos bugs reales, Docker y Claude Desktop",
-badge: "Parte 2 · Lección 8",
+badge: "Parte 2 · Lección 9",
 content: `
 <div class="content-block">
 <h2>Correr y verificar</h2>
@@ -2321,7 +2462,7 @@ docker run -p 8000:8000 -e MCP_API_KEY=mi-clave pokemon-mcp-server</pre>
 {
 title: "Probar con MCP Inspector",
 subtitle: "La herramienta oficial para inspeccionar y depurar tu servidor a mano",
-badge: "Parte 2 · Lección 9",
+badge: "Parte 2 · Lección 10",
 content: `
 <div class="content-block">
 <h2>¿Qué es MCP Inspector?</h2>
@@ -2381,7 +2522,7 @@ ${quiz(25, "¿Para qué sirve MCP Inspector frente al cliente de prueba (npm tes
 {
 title: "Hermes Agent + Telegram",
 subtitle: "Chatea por Telegram y deja que un agente use tu servidor MCP",
-badge: "Parte 2 · Lección 10",
+badge: "Parte 2 · Lección 11",
 content: `
 <div class="content-block">
 <h2>El mismo servidor, otro cliente</h2>
@@ -2436,7 +2577,7 @@ ${quiz(23, "Hermes (WSL) no conecta a 127.0.0.1:8000 del servidor (Windows). ¿P
 {
 title: "Crear un skill para Hermes",
 subtitle: "MCP da capacidades; el skill da conducta",
-badge: "Parte 2 · Lección 11",
+badge: "Parte 2 · Lección 12",
 content: `
 <div class="content-block">
 <div class="callout">
