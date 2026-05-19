@@ -2638,6 +2638,146 @@ ${quiz(11, "Pregunta 3: ¿Cuál es la función de list() en un ResourceTemplate 
 "Ordenar recursos por fecha"
 ], 1, "list() le permite al cliente descubrir todas las instancias disponibles de un resource dinámico, como los perfiles de todos los usuarios.")}
 
+${quiz(30, "Pregunta 4: ¿Cuál de estas NO es una primitiva de MCP?", [
+"Tool",
+"Resource",
+"Prompt",
+"Endpoint"
+], 3, "Las tres primitivas son Tool, Resource y Prompt. 'Endpoint' no es una primitiva MCP.")}
+
+${quiz(31, "Pregunta 5: ¿Quién decide cuándo se invoca una Tool?", [
+"El usuario manualmente",
+"El modelo / LLM durante la conversación",
+"El servidor de forma automática",
+"El sistema operativo"
+], 1, "Las Tools las invoca el modelo cuando decide que las necesita; por eso su descripción es clave.")}
+
+${quiz(32, "Pregunta 6: ¿Qué primitiva expone datos de solo lectura mediante una URI?", [
+"Tool",
+"Resource",
+"Prompt",
+"Transport"
+], 1, "Un Resource es de solo lectura y se identifica por una URI (fija o plantilla).")}
+
+${quiz(33, "Pregunta 7: ¿Qué primitiva es una plantilla de conversación que elige el usuario?", [
+"Tool",
+"Resource",
+"Prompt",
+"Session"
+], 2, "Un Prompt es una plantilla reutilizable que guía al modelo; la elige el usuario.")}
+
+${quiz(34, "Pregunta 8: ¿Qué transporte usa el proyecto pokemon-mcp-server (en vez de SSE)?", [
+"WebSockets",
+"Streamable HTTP",
+"gRPC",
+"STDIO"
+], 1, "Se usa Streamable HTTP: un solo endpoint POST /mcp, el transporte moderno recomendado.")}
+
+${quiz(35, "Pregunta 9: ¿Cuál es el endpoint principal del servidor?", [
+"GET /sse",
+"POST /messages",
+"POST /mcp",
+"GET /rpc"
+], 2, "Todo el protocolo JSON-RPC viaja por POST /mcp; DELETE /mcp cierra sesión y GET /health es el healthcheck.")}
+
+${quiz(36, "Pregunta 10: ¿Qué header autentica las peticiones al servidor?", [
+"Authorization: Bearer",
+"x-api-key",
+"X-Auth-Token",
+"Api-Secret"
+], 1, "El middleware valida el header x-api-key en todas las rutas excepto /health.")}
+
+${quiz(37, "Pregunta 11: ¿Qué ruta NO requiere API key?", [
+"/mcp",
+"/health",
+"/tools",
+"Todas la requieren"
+], 1, "/health se excluye para que los healthchecks no necesiten clave.")}
+
+${quiz(38, "Pregunta 12: El primer request de una sesión MCP nueva debe ser...", [
+"Una llamada a tool",
+"Un initialize request",
+"Un GET /health",
+"Un DELETE /mcp"
+], 1, "Sin sesión, el body debe pasar isInitializeRequest; si no, el servidor responde 400.")}
+
+${quiz(39, "Pregunta 13: ¿Cómo se identifica una sesión entre cliente y servidor?", [
+"Por la cookie de sesión",
+"Por el header Mcp-Session-Id",
+"Por la IP del cliente",
+"Por un query param ?session"
+], 1, "Cada sesión se identifica con el header Mcp-Session-Id y tiene su propio McpServer/transport.")}
+
+${quiz(40, "Pregunta 14: Causa real del error 401 'aunque ya puse la key'", [
+"La clave estaba mal escrita",
+"El proyecto no cargaba .env (faltaba dotenv)",
+"El servidor estaba caído",
+"PokeAPI rechazó la petición"
+], 1, "Sin dotenv, process.env.MCP_API_KEY quedaba undefined y se usaba el fallback dev-secret-key.")}
+
+${quiz(41, "Pregunta 15: ¿Dónde debe ir import 'dotenv/config'?", [
+"Al final del archivo",
+"Antes de importar middleware/auth (que lee la variable al cargarse)",
+"Dentro del handler de cada tool",
+"En el package.json"
+], 1, "auth.ts lee process.env.MCP_API_KEY al evaluarse, así que dotenv debe ejecutarse primero.")}
+
+${quiz(42, "Pregunta 16: ¿Cómo se resolvió el error TS2589 del SDK + zod?", [
+"Bajando la versión de TypeScript",
+"Un helper que castea en una frontera única del SDK",
+"Quitando zod",
+"Desactivando strict en todo el proyecto"
+], 1, "Aislar la inferencia profunda en un helper único colapsa el problema y mantiene el resto tipado.")}
+
+${quiz(43, "Pregunta 17: Subir la RAM cuando tsc hacía OOM era...", [
+"La solución definitiva",
+"Tratar el síntoma, no la causa",
+"Imposible en WSL",
+"Un bug de Node"
+], 1, "Solo posponía el OOM; la causa era la inferencia recursiva, resuelta con el helper.")}
+
+${quiz(44, "Pregunta 18: Los imports relativos con extensión .js fallaban en...", [
+"npm run build (tsc)",
+"npm run dev (ts-node-dev ejecuta los .ts directamente)",
+"Docker",
+"El cliente de prueba"
+], 1, "Con module commonjs, en relativos se quita el .js; los del SDK sí lo conservan.")}
+
+${quiz(45, "Pregunta 19: En la integración con Telegram, Hermes actúa como...", [
+"Un servidor MCP",
+"Un cliente MCP (como Claude Desktop o el test client)",
+"Un proxy de PokeAPI",
+"Una base de datos"
+], 1, "Hermes consume el servidor; no se cambia nada del servidor para integrarlo.")}
+
+${quiz(46, "Pregunta 20: ¿Por qué falla 'Connect call failed (127.0.0.1, 8000)' entre WSL y Windows?", [
+"El servidor está apagado",
+"WSL2 y Windows no comparten localhost (redes distintas)",
+"Falta la API key",
+"El puerto debe ser 80"
+], 1, "Hay que correr ambos en el mismo entorno o apuntar a la IP del host.")}
+
+${quiz(47, "Pregunta 21: ¿Qué aporta un skill de Hermes que NO aporta el MCP?", [
+"Los datos",
+"La conducta: cómo y cuándo usar las capacidades",
+"La autenticación",
+"El transporte"
+], 1, "MCP = capacidades (datos). Skill = conducta. El mismo MCP con skills distintos da asistentes distintos.")}
+
+${quiz(48, "Pregunta 22: ¿Para qué sirve MCP Inspector?", [
+"Compilar TypeScript",
+"Invocar tools/resources/prompts a mano y ver el JSON-RPC crudo para depurar",
+"Desplegar en producción",
+"Generar la API key"
+], 1, "Permite inspeccionar caso por caso el handshake, los schemas y los errores exactos.")}
+
+${quiz(49, "Pregunta 23: ¿Cuál es la regla de oro de la arquitectura del proyecto?", [
+"Usar la menor cantidad de archivos",
+"Separación estricta de capas (cada capa ignora lo de arriba)",
+"Poner toda la lógica en index.ts",
+"Evitar TypeScript"
+], 1, "pokeapi.ts no sabe de MCP, tools/ no sabe de Express, index.ts solo orquesta.")}
+
 <div class="content-block">
 <div class="course-card">
 <div class="qr-box">
