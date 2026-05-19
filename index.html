@@ -380,7 +380,7 @@ pre .op{color:var(--text3)}
 <p>Curso interactivo</p>
 </div>
 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-<div class="progress-text" id="progressText">0 de 20 lecciones completadas</div>
+<div class="progress-text" id="progressText">0 de 21 lecciones completadas</div>
 
 <div class="nav-section">
 <div class="nav-section-title">Inicio</div>
@@ -413,15 +413,16 @@ pre .op{color:var(--text3)}
 <div class="nav-item" onclick="goTo(14)"><span class="nav-dot"></span>Resources y Prompts</div>
 <div class="nav-item" onclick="goTo(15)"><span class="nav-dot"></span>Transporte y sesiones</div>
 <div class="nav-item" onclick="goTo(16)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
+<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Parte 2 · Agentes</div>
-<div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
-<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Crear un skill</div>
+<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
+<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Crear un skill</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Cierre</div>
-<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Certificación</div>
+<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Certificación</div>
 </div>
 </aside>
 
@@ -2069,11 +2070,71 @@ docker run -p 8000:8000 -e MCP_API_KEY=mi-clave pokemon-mcp-server</pre>
 `
 },
 
+// ─── P2.7b: MCP Inspector ───────────────────────────────
+{
+title: "Probar con MCP Inspector",
+subtitle: "La herramienta oficial para inspeccionar y depurar tu servidor a mano",
+badge: "Parte 2 · Lección 8",
+content: `
+<div class="content-block">
+<h2>¿Qué es MCP Inspector?</h2>
+<p>El <strong>cliente de prueba</strong> (<code>npm test</code>) verifica todo de golpe, pero no deja inspeccionar caso por caso. <strong>MCP Inspector</strong> es la herramienta oficial de Anthropic: una UI web para conectarte a cualquier servidor MCP e invocar sus Tools, Resources y Prompts <strong>a mano</strong>, viendo el handshake, los schemas y la respuesta cruda JSON-RPC. Es lo mejor para depurar.</p>
+<div class="code-block">
+<div class="code-header"><span class="lang">Bash</span><span class="filename">terminal</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre>npx @modelcontextprotocol/inspector</pre>
+</div>
+<p>No requiere instalación. Abre <strong>http://localhost:6274</strong> en el navegador.</p>
+</div>
+
+<div class="content-block">
+<h2>Conectar al servidor</h2>
+<p>Con tu <code>pokemon-mcp-server</code> corriendo (<code>npm run dev</code>), en la UI del Inspector configura:</p>
+<ul>
+<li><strong>Transport Type:</strong> <code>Streamable HTTP</code></li>
+<li><strong>URL:</strong> <code>http://localhost:8000/mcp</code></li>
+<li><strong>Headers:</strong> agrega <code>x-api-key</code> con tu clave del <code>.env</code></li>
+<li>Pulsa <strong>Connect</strong></li>
+</ul>
+<div class="callout warning">
+<div class="callout-title">El header no es opcional</div>
+<p>Si omites <code>x-api-key</code> o pones una clave distinta a la del <code>.env</code>, el handshake falla con <strong>401</strong> — exactamente el caso de la lección de Autenticación. El Inspector te muestra el error crudo, ideal para confirmar que la clave coincide.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Explorar las pestañas</h2>
+<div class="concept-grid">
+<div class="concept-card tool"><span class="icon">🛠️</span><h4>Tools</h4><p>Selecciona <code>get_pokemon</code>, escribe <code>nameOrId: gengar</code> y ejecuta. Ves el JSON-RPC de ida y la respuesta Markdown de vuelta.</p></div>
+<div class="concept-card resource"><span class="icon">📄</span><h4>Resources</h4><p>Lee <code>pokemon://pikachu</code> o <code>pokedex://type-chart</code> y revisa el contenido y su <code>mimeType</code>.</p></div>
+<div class="concept-card prompt"><span class="icon">💬</span><h4>Prompts</h4><p>Invoca <code>battle-analysis</code> con argumentos y observa los <code>messages</code> generados.</p></div>
+</div>
+<p>Cada acción muestra el mensaje JSON-RPC 2.0 exacto: útil para entender el protocolo que viste en la Parte 1 — ahora con datos reales de tu servidor.</p>
+</div>
+
+<div class="content-block">
+<h2>Cuándo usar cada herramienta</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Guía</span><span class="filename">testing</span></div>
+<pre>Verificar rápido que todo responde   ->  npm test (test/client.mjs)
+Probar a mano + ver JSON y errores    ->  MCP Inspector
+Aislar fallo de red / auth            ->  curl /health y POST /mcp
+Validar experiencia de usuario final  ->  Claude Desktop / Telegram (Hermes)</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Flujo de depuración recomendado</div>
+<p>① <code>curl /health</code> (¿vive?) → ② Inspector Connect (¿auth y handshake OK?) → ③ invoca la tool que falla y lee el error crudo → ④ corrige y reconecta. Aísla antes de tocar código.</p>
+</div>
+</div>
+
+${quiz(25, "¿Para qué sirve MCP Inspector frente al cliente de prueba (npm test)?", ["Reemplaza al servidor","Permite invocar tools/resources/prompts a mano y ver el JSON-RPC crudo para depurar","Compila TypeScript","Genera la API key"], 1, "npm test verifica todo de golpe; Inspector deja inspeccionar caso por caso el handshake, los schemas y los errores exactos.")}
+`
+},
+
 // ─── P2.8: Hermes + Telegram ────────────────────────────
 {
 title: "Hermes Agent + Telegram",
 subtitle: "Chatea por Telegram y deja que un agente use tu servidor MCP",
-badge: "Parte 2 · Lección 8",
+badge: "Parte 2 · Lección 9",
 content: `
 <div class="content-block">
 <h2>El mismo servidor, otro cliente</h2>
@@ -2128,7 +2189,7 @@ ${quiz(23, "Hermes (WSL) no conecta a 127.0.0.1:8000 del servidor (Windows). ¿P
 {
 title: "Crear un skill para Hermes",
 subtitle: "MCP da capacidades; el skill da conducta",
-badge: "Parte 2 · Lección 9",
+badge: "Parte 2 · Lección 10",
 content: `
 <div class="content-block">
 <div class="callout">
