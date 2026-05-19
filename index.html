@@ -2575,8 +2575,8 @@ content: `
 <div class="content-block">
 <h2>Del contenedor a la nube</h2>
 <p>Ya tenemos una imagen Docker. El siguiente paso es ejecutarla en AWS de forma gestionada. El propio <code>Dockerfile</code> lo anticipa ("best practice for Fargate", "Healthcheck used by ECS"), así que el destino natural es <strong>ECS Fargate detrás de un Application Load Balancer</strong>, definido con <strong>Terraform</strong> (Infraestructura como Código: reproducible, versionable, destruible).</p>
-<div class="fig-wide" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;margin:24px 0">
-<img loading="lazy" decoding="async" class="zoomable" onclick="openLightbox(this)" title="Clic para ampliar" src="terraform.png" alt="Arquitectura de despliegue en AWS: Internet por HTTP:80 al ALB, Target Group con health check /health, instancias en Auto Scaling Group, Secrets Manager para MCP_API_KEY y logs en CloudWatch" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto;image-rendering:-webkit-optimize-contrast">
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;margin:24px 0">
+<img loading="lazy" decoding="async" class="zoomable" onclick="openLightbox(this)" title="Clic para ampliar" src="terraform.png" alt="Arquitectura de despliegue en AWS: Internet por HTTP:80 al ALB, Target Group con health check /health, instancias en Auto Scaling Group, Secrets Manager para MCP_API_KEY y logs en CloudWatch" style="max-width:100%;max-height:60vh;width:auto;height:auto;border-radius:8px;display:block;margin:0 auto;image-rendering:-webkit-optimize-contrast">
 <p style="font-size:12px;color:var(--text3);margin:10px 0 0">Figura · Arquitectura de despliegue en AWS (ALB → cómputo → CloudWatch, con Secrets Manager). <strong style="color:var(--accent)">🔍 Clic para ampliar</strong></p>
 </div>
 <details style="margin:8px 0 16px">
