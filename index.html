@@ -364,9 +364,90 @@ pre .op{color:var(--text3)}
 .info-footer{grid-template-columns:1fr}
 .info-title{font-size:26px}
 }
+
+/* ════════ UX upgrade ════════ */
+.skip-link{position:absolute;left:-999px;top:0;z-index:9999;background:var(--accent);color:var(--bg);padding:10px 16px;border-radius:0 0 8px 0;font-weight:700;font-size:13px}
+.skip-link:focus{left:0}
+a:focus-visible,button:focus-visible,input:focus-visible,.nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.main:focus{outline:none}
+
+/* Tipografía fluida */
+.lesson-title{font-size:clamp(28px,2vw + 18px,40px)}
+.lesson-subtitle{font-size:clamp(15px,.4vw + 13px,17px)}
+.content-block h2{font-size:clamp(19px,.6vw + 15px,23px)}
+
+/* Topbar sticky de lección */
+.lesson-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px clamp(20px,4vw,40px);background:var(--bg);border-bottom:1px solid var(--border);backdrop-filter:blur(8px)}
+.tb-crumb{font-size:12px;color:var(--text3);letter-spacing:.3px;font-weight:600}
+.tb-crumb .tb-sep{margin:0 6px;opacity:.6}
+.tb-crumb .tb-of{color:var(--text3);opacity:.7}
+.tb-actions{display:flex;align-items:center;gap:8px}
+.tb-pct{font-size:11px;color:var(--accent);font-weight:700;margin-right:4px}
+.tb-btn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:14px;font-family:var(--font-body);transition:all .2s}
+.tb-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.tb-btn.disabled{opacity:.35;cursor:default;pointer-events:none}
+
+/* Meta (tiempo lectura / posición) */
+.lesson-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text3);margin:-26px 0 32px}
+.lesson-meta .lm-dot{opacity:.5}
+
+/* Mini-TOC */
+.lesson-toc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 32px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.lesson-toc .toc-title{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);font-weight:700;margin-right:4px}
+.lesson-toc a{font-size:12.5px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:5px 12px;border-radius:999px;text-decoration:none;border-bottom:1px solid var(--border)!important;transition:all .2s}
+.lesson-toc a:hover{color:var(--accent);border-color:var(--accent)!important;transform:translateY(-1px)}
+
+/* Sidebar header / progreso circular / búsqueda / tema */
+.sh-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:14px;line-height:1;transition:all .2s}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.progress-wrap{display:flex;align-items:center;gap:12px;margin:16px 24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.progress-ring{flex-shrink:0;transform:rotate(-90deg)}
+.progress-ring .pr-bg{fill:none;stroke:var(--bg4);stroke-width:4}
+.progress-ring .pr-fg{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-dasharray:119.38;stroke-dashoffset:119.38;transition:stroke-dashoffset .6s cubic-bezier(.22,1,.36,1)}
+.progress-wrap .progress-text{padding:0;border:none;font-size:11.5px;color:var(--text3);line-height:1.4}
+.nav-search-wrap{padding:14px 22px 6px}
+.nav-search{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:var(--font-body);outline:none;transition:border-color .2s}
+.nav-search::placeholder{color:var(--text3)}
+.nav-search:focus{border-color:var(--accent)}
+
+/* Check ✓ en lecciones completadas */
+.nav-item.completed::after{content:'✓';margin-left:auto;color:var(--accent);font-size:11px;font-weight:700}
+
+/* Cierre celebratorio */
+.certificate.celebrate{animation:certPop .6s cubic-bezier(.22,1.4,.36,1) both}
+@keyframes certPop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+
+/* Tema claro */
+:root[data-theme="light"]{
+--bg:#ffffff;--bg2:#f5f6fa;--bg3:#eceef4;--bg4:#dfe2ec;
+--text:#1b1b24;--text2:#42475a;--text3:#71768a;
+--accent:#0a7d55;--accent2:#0c8a5e;--accent3:#0a6f4c;
+--purple:#6d3fd6;--purple2:#5a2fc0;
+--coral:#d92d4f;--coral2:#b91d3d;
+--amber:#b07706;--amber2:#8f5f04;
+--blue:#1f6feb;--blue2:#1559c8;
+--border:#e3e5ee;--border2:#cdd1de;
+--shadow:0 4px 24px rgba(20,20,40,.08);
+}
+:root[data-theme="light"] body::before{opacity:.015}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+body::before{display:none}
+}
+
+@media(max-width:768px){
+.lesson-topbar{padding:10px 16px}
+.tb-pct{display:none}
+.lesson-meta{margin:-18px 0 24px}
+}
+
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
 
 <div class="mobile-toggle" onclick="toggleSidebar()">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -376,11 +457,17 @@ pre .op{color:var(--text3)}
 <div class="app">
 <aside class="sidebar" id="sidebar">
 <div class="sidebar-header">
-<h1>Loan Simulator Academy</h1>
+<div class="sh-top"><h1>Loan Simulator Academy</h1><button id="themeToggle" class="theme-toggle" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">◐</button></div>
 <p>Curso interactivo</p>
 </div>
-<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+<div class="progress-wrap">
+<svg class="progress-ring" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+<circle class="pr-bg" cx="22" cy="22" r="19"></circle>
+<circle class="pr-fg" id="progressRing" cx="22" cy="22" r="19"></circle>
+</svg>
 <div class="progress-text" id="progressText">0 de 21 lecciones completadas</div>
+</div>
+<div class="nav-search-wrap"><input id="navSearch" class="nav-search" type="search" placeholder="Buscar lección…" aria-label="Buscar lección"></div>
 
 <div class="nav-section">
 <div class="nav-section-title">Inicio</div>
@@ -464,7 +551,7 @@ content: `
 <div class="content-block">
 <div class="linkedin-card">
 <div class="qr-box">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https%3A%2F%2Fwww.linkedin.com%2Fin%2Fjuan-alberto-alc%25C3%25A1ntara-sotelo-23a349182%2F" alt="QR código a LinkedIn de Juan Alberto Alcántara Sotelo" width="160" height="160">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgAQMAAABHGizWAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAACsUlEQVR4nO3cMXLjMAxAUXhSuMwRfBQdTTqaj+IjbJliJ1iJAEFQZuKdiZTqo3FC8SkVQgqgLJriQ0Sm9XP9uNrIp/+wiLytH49yOULAYPAI/xWPy4rf68QPuend7vynXF3nXQuu02UGg8GnYEvZgrd8Tthjyum+ztviDgaD/wtbSvpEqUvovf74AIPBv4o93lz1G9fX/wzAYPD8vPfcBlXbfa7r3rOsnBbTtxtXMBj8Y5yi4vY4+Bk4HgdTgMHgER5Fuc9tu2y4pJ8U/DrAYPBPcEvOS0vUbeXc1z0tuhwHg8EjHI9566C0boJHHSvhj4MSY2Aw+Bx8q9c9T1N/3e+s/tg4dfPAYPApeIsokPozYukOXnyi2n22PxKVHAGDwWNcD5KlBl+L2nbIG1fVupkFg8GHY+8OpmdE1egYaldItZXTb7vNA4PBIxyrZPTcZ1NlYlsly6VbLI67vScYDD4KW4thsmpMwmoiEjsVUvuNKxgM7nH00mPvqbue+/Pe0wovCxgMPh7niVI3qTXHS36nV4jExq6xcoLB4GescWqlndMsvzyki7ZK9g17MBh8KBaRXYVm6Zp+lsS+cpZ4bkWAweBhgy8KKktaOTWPqQ73nmAw+ECs6hNFcj6retXGKjTLtxtXMBh8HO46gbacanfkZYt5fLgMDAZ/jb1CYxNlV6G5t/bEPZ9uAYPBZ+F9WBqn58t+nr/VBwaDB7iPfSuivdXnY9JSEgwGn4A1Re25a7QnbOWcNhznPVMlBwwGj3D3TUe1GCrdgbOp3rJLSQGDwadg25BKel2oO1yWvk46Yl/3BIPBL7GFiF9cLGuj6Vf3nmAw+GRcBmsfPtVCNToVLcfBYPAX2CMdGovTLfXk2WzVmJv9EUtJMBh8Bk4RrwvZxOeNqzf98hFsMBh8JP4H5sZ/NvTAer0AAAAASUVORK5CYII=" alt="QR código a LinkedIn de Juan Alberto Alcántara Sotelo" width="160" height="160">
 </div>
 <div class="linkedin-info">
 <div class="linkedin-label">💼 Conectemos</div>
@@ -476,7 +563,7 @@ content: `
 
 <div class="course-card">
 <div class="qr-box">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https%3A%2F%2Fcurso-mcp.vercel.app%2F" alt="QR código al curso MCP desplegado" width="160" height="160">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgAQMAAABHGizWAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABtUlEQVR4nO3aQY6EIBCFYRMP4BE4Kh7VI3gAE2bQoigBJ92RnnbxvxXSfLirUNhDKLINOWOcWPXRl2sHMBgM7oEXs9xF7COQeQEyXs3SCQwGg7vhMdWkA9uN9lgsS2cwGAz+HPahkQ0MBoP/DR/HpN+xLjodscBgMPhZOCcXwPiUNo1JWAMGg8G98Dm5Vu217VzDioDBYHAH3MwUfxL8dsBgMPgtfK5JrqxPUrca9WwFg8HgLlgX2W5NNt30ad9UcL0eDAaDv4XLRa12sIzeXIHBYPB9rGcvCyQVLi/HwWAw+D6WaQHuGMut1JBr1fG9Lr9gDxgMBvfDjeLmjiPWpLdVf1xpgcFg8A28mPpUbeTTfOri7BgMBoMfg/dU4znuIGAw57PUDoLBYHBPrGesYFrAoOewalMwGAzugBvxaVn6dnc1BoPB4A44FKlq2N7dSW27vBwHg8HgG3gx5cuZ4uZMF1fVMA8Gg8FPwa128DpLLoxgMBj8cTynehYE2G3AYDD4gziS0fzFqdhofuUbHRgMBr+IcwSvZip3dF7eoZ0eGAwGd8HnZOx0Lj6lemYDBoPBX8Y/ynDRDKtZh6gAAAAASUVORK5CYII=" alt="QR código al curso MCP desplegado" width="160" height="160">
 </div>
 <div>
 <div class="course-label">🌐 Comparte el curso</div>
@@ -489,7 +576,7 @@ content: `
 
 <div class="web-card">
 <div class="qr-box">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https%3A%2F%2Fjuan-alberto-alcantara.com%2F" alt="QR código a la página web de Juan Alberto Alcántara Sotelo" width="160" height="160">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgAQMAAABHGizWAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAACXUlEQVR4nO3cMXLjMAyFYXpcqPQRdBQfTTqajuIjuHThCZckABLUJjvbmcv9X5GJA33qDBOknBC7PEIIt/gKNX3x1l8d+pdgMPjjuF25av0VrunnV+gixWd9fQGDwdPhrfSFo9SDtou31tMFe7rgKCDjRctgMHh4bM3g3drAlngAg8H/Gc5ZUu0aNcJzHmAweHxsWWtd1wUtRy1awGDwbNin4Wsa+7sxwZYNLmAweCz8U+pGXtR1vi0b/iZgMPjfw60v5GZhcZ1Exv57omtqMvn0zxoNGAweDEts01746/ym32IsOJZlg5QvdWUABoNnwOXq0ipaJ3EH9lJsY8KzuykYDJ4N50XFXZuFxO0C7unXe4xlTPh+TQIGg4fBUrX3+7cH9nc39C96bzAYPBO2+uFeudN+v6lg+WnGAIPBH8a2zXfUD3+LO7Dfyx9kD1BinQQMBs+CLULXUsmtojvgs7E/Z9HyFxgMHg+3uV5yenpHVvqh4n6lDwaDZ8G5vkXbA8zpvmH/+71tV8DGBDAYPBjetdq28bozOsvNYamCweAZ8UOvsY/+uke4RZkhnnpvGxPAYPCcWDrJs9R0iLBy0O0E6yQlYDB4LHyO/fMcd8C3l2ZgvWKpNwGDwTPh2MU/fXtpt99ccdG754DB4MFwqFnr+/3tB/89BDcI9N+7AYPBM2FpFEfBfq4/HfBZ2hYhGAweHp8ftivNQFqBfO9GAwaDJ8enAz7Jw/WSGP/UhsBg8AexRbBM9npGZ2uDo1DZEfBfqgWDwfNgH1sZ1LWBNJq9rAwab0/vgMHgSfAv1cgf4pyqYncAAAAASUVORK5CYII=" alt="QR código a la página web de Juan Alberto Alcántara Sotelo" width="160" height="160">
 </div>
 <div>
 <div class="web-label">✦ Mi página personal</div>
@@ -1744,7 +1831,7 @@ content: `
 <h2>Arquitectura</h2>
 <p>La regla de oro: <strong>separación estricta de capas</strong> — cada capa ignora lo que hay por encima.</p>
 <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin:16px 0">
-<img src="Arquitectura.png" alt="Arquitectura del proyecto pokemon-mcp-server: capas Cliente, Orquesta (Express), Transporte MCP, Cliente API y API externa" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto">
+<img loading="lazy" decoding="async" src="Arquitectura.png" alt="Arquitectura del proyecto pokemon-mcp-server: capas Cliente, Orquesta (Express), Transporte MCP, Cliente API y API externa" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto">
 <p style="font-size:12px;color:var(--text3);margin:10px 0 0">Figura · Las 5 capas del proyecto y el flujo de una petición.</p>
 </div>
 </div>
@@ -2140,7 +2227,7 @@ content: `
 <h2>El mismo servidor, otro cliente</h2>
 <p><strong>Hermes Agent</strong> (Nous Research) es un agente autónomo que soporta servidores MCP y un <em>messaging gateway</em> a 20+ plataformas, incluida Telegram. Actúa como <strong>cliente MCP</strong> — igual que el test client o Claude Desktop. No cambiamos nada del servidor.</p>
 <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin:16px 0">
-<img src="telegram.png" alt="Flujo: mensaje de Telegram pasa por Hermes Gateway, Hermes Agent (cliente MCP), pokemon-mcp-server y PokeAPI, y la respuesta vuelve a Telegram" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto">
+<img loading="lazy" decoding="async" src="telegram.png" alt="Flujo: mensaje de Telegram pasa por Hermes Gateway, Hermes Agent (cliente MCP), pokemon-mcp-server y PokeAPI, y la respuesta vuelve a Telegram" style="max-width:100%;height:auto;border-radius:8px;display:block;margin:0 auto">
 <p style="font-size:12px;color:var(--text3);margin:10px 0 0">Figura · Flujo Telegram → Hermes → pokemon-mcp-server → PokeAPI.</p>
 </div>
 </div>
@@ -2543,7 +2630,7 @@ ${quiz(11, "Pregunta 3: ¿Cuál es la función de list() en un ResourceTemplate 
 <div class="content-block">
 <div class="course-card">
 <div class="qr-box">
-<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https%3A%2F%2Fgithub.com%2FAlbertoblue%2Fpokemon-mcp-serve" alt="QR código al repositorio pokemon-mcp-server en GitHub" width="160" height="160">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgAQMAAABHGizWAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAACb0lEQVR4nO3cPVLDMBCGYWVSUHIEH8VHs4/mo3AESheZLFntriSbACVCvF8DmdXjLmv92ElyyFvSvMgtXR+f7vpBZE2LF1+PoxMYDO4Mp5Ip198zTukSY9YyQIuRCxgMHg5bo9gyjlwffeRS8ZxLdmXNDQwG949fvXY1qNdZSjsAg8H/B+uIPY+81GWCdhIp0wYwGNwxjkQz2KMV1Gx5wM/LBDAY/Hdxm7rs92VC7AG204YSMBjcF/6cmOvn6L8V/xwwGPxXce0LWrfEzOCefBWx5j3A6dFkdA0RjQYMBneH9Vu95MFWf3JgX5f9dm1NXSaAweARsNE1/42b/4vPC5oDvrZoOAIGg0fBUbURctrm86tvDajTCjAY3BW2b7tVp3Lz/+LAPnDsCoDB4LGw5E0Bybd+O8O7yq2e9mu2sqFwXGOAweCOcLSDuZzh2cygeTTXpg6KbU9A41v+YDB4GCwlWx4RdX/zpt0DjOx+bTAY3CnevG5neCn5Jp7+s8j5gO/cDMBg8Ai4XddbXUo1WSdZRDK27L6KEDAY3CPW2Ew/eTPwA/soxzKgYrswGAweDW/55h8P5kqmzdxg8z4Sp3/1UT4wGDwO1sy5VvcAy7M7mvW0ZxCnf2AwuCt8TrxE3+wBamLaEHv6YDB4NCyH1Kd3PPphTckfBmh/biOqYDC4I5xK4vt+SOwBSmkGtitwB4PBw2GrxTZf/NyGv4QX5wVTaTd7KYLB4O7x4dFcyyxSOoUtBJ4d8IHB4LHwk5dqZznnuzYEBoN/DUcmX/bHrb/BNjN4/vM5YDB4DNym7SRObZkw53nB56d3wGDwIPgDEAVan7AlELYAAAAASUVORK5CYII=" alt="QR código al repositorio pokemon-mcp-server en GitHub" width="160" height="160">
 </div>
 <div>
 <div class="course-label">⌥ Código fuente</div>
@@ -2583,22 +2670,50 @@ ${options.map((opt, i) => `
 let currentLesson = 0;
 const completed = new Set();
 
+function lessonPart(i){ return i < 10 ? 'Parte 1 · Fundamentos' : (i < 20 ? 'Parte 2 · Práctica' : 'Cierre'); }
+function readingTime(htmlStr){ var t = htmlStr.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); var w = t ? t.split(' ').length : 0; return Math.max(1, Math.round(w/180)); }
+function tocJump(ev,id){ ev.preventDefault(); var el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return false; }
+function buildToc(){
+  var view=document.querySelector('.lesson-view');
+  var toc=document.getElementById('lessonToc');
+  if(!view||!toc) return;
+  var hs=[].slice.call(view.querySelectorAll('h2'));
+  if(hs.length<3){ toc.hidden=true; return; }
+  toc.innerHTML='<span class="toc-title">En esta lección</span>'+hs.map(function(h,i){
+    var id='sec-'+currentLesson+'-'+i; h.id=id;
+    return '<a href="#'+id+'" onclick="return tocJump(event,\''+id+'\')">'+h.textContent.trim()+'</a>';
+  }).join('');
+  toc.hidden=false;
+}
 function render() {
   const lesson = lessons[currentLesson];
   const main = document.getElementById('main');
+  const total = lessons.length;
+  const pct = Math.round((completed.size/total)*100);
+  const rt = readingTime(lesson.content);
+  const prevTb = currentLesson>0 ? `<button class="tb-btn" onclick="goTo(${currentLesson-1})" aria-label="Lección anterior">←</button>` : `<span class="tb-btn disabled" aria-hidden="true">←</span>`;
+  const nextTb = currentLesson<total-1 ? `<button class="tb-btn" onclick="goTo(${currentLesson+1})" aria-label="Lección siguiente">→</button>` : `<span class="tb-btn disabled" aria-hidden="true">→</span>`;
   main.innerHTML = `
+  <div class="lesson-topbar">
+    <div class="tb-crumb">${lessonPart(currentLesson)} <span class="tb-sep">›</span> Lección ${currentLesson+1} <span class="tb-of">/ ${total}</span></div>
+    <div class="tb-actions"><span class="tb-pct">${pct}% del curso</span>${prevTb}${nextTb}</div>
+  </div>
   <div class="lesson-view">
     <div class="lesson-badge"><i>▶</i> ${lesson.badge}</div>
     <h1 class="lesson-title">${lesson.title}</h1>
     <p class="lesson-subtitle">${lesson.subtitle}</p>
+    <div class="lesson-meta"><span>⏱ ${rt} min de lectura</span><span class="lm-dot">•</span><span>Lección ${currentLesson+1} de ${total}</span></div>
+    <nav class="lesson-toc" id="lessonToc" hidden></nav>
     ${lesson.content}
     <div class="lesson-nav">
       ${currentLesson > 0 ? `<button class="nav-btn" onclick="goTo(${currentLesson-1})">← Anterior</button>` : '<div></div>'}
-      ${currentLesson < lessons.length - 1 ? `<button class="nav-btn primary" onclick="completeAndNext()">Siguiente lección →</button>` : `<button class="nav-btn primary" onclick="completeCourse()">Finalizar curso ✦</button>`}
+      ${currentLesson < total - 1 ? `<button class="nav-btn primary" onclick="completeAndNext()">Siguiente lección →</button>` : `<button class="nav-btn primary" onclick="completeCourse()">Finalizar curso ✦</button>`}
     </div>
   </div>`;
   main.scrollTop = 0;
+  buildToc();
   updateNav();
+  saveState();
 }
 
 function updateNav() {
@@ -2607,13 +2722,18 @@ function updateNav() {
     item.classList.toggle('active', i === currentLesson);
     item.classList.toggle('completed', completed.has(i));
   });
-  const pct = Math.round((completed.size / lessons.length) * 100);
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressText').textContent = `${completed.size} de ${lessons.length} lecciones completadas`;
+  const total = lessons.length;
+  const pct = Math.round((completed.size / total) * 100);
+  const ring = document.getElementById('progressRing');
+  if (ring) { const C = 2 * Math.PI * 19; ring.style.strokeDasharray = C.toFixed(2); ring.style.strokeDashoffset = (C * (1 - pct/100)).toFixed(2); }
+  const pt = document.getElementById('progressText');
+  if (pt) pt.textContent = `${completed.size} de ${total} lecciones completadas`;
 }
 
 function goTo(idx) {
+  if (idx < 0 || idx >= lessons.length) return;
   currentLesson = idx;
+  if (location.hash !== '#leccion-' + idx) history.replaceState(null, '', '#leccion-' + idx);
   render();
   closeSidebar();
 }
@@ -2629,8 +2749,83 @@ function completeAndNext() {
 function completeCourse() {
   completed.add(currentLesson);
   updateNav();
+  saveState();
   const cert = document.getElementById('certificate-area');
-  if (cert) { cert.style.display = 'block'; cert.scrollIntoView({ behavior: 'smooth' }); }
+  if (cert) {
+    cert.style.display = 'block';
+    const c = cert.querySelector('.certificate'); if (c) c.classList.add('celebrate');
+    if (!document.getElementById('resetProgress')) {
+      const b = document.createElement('button');
+      b.id = 'resetProgress'; b.className = 'nav-btn';
+      b.textContent = '↺ Reiniciar progreso';
+      b.style.cssText = 'margin:20px auto 0;display:block';
+      b.onclick = resetProgress;
+      cert.appendChild(b);
+    }
+    cert.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+function resetProgress() {
+  try { localStorage.removeItem('mcpCourse'); } catch (e) {}
+  completed.clear(); currentLesson = 0;
+  history.replaceState(null, '', '#leccion-0');
+  render();
+}
+function saveState() {
+  try { localStorage.setItem('mcpCourse', JSON.stringify({ current: currentLesson, completed: [...completed] })); } catch (e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem('mcpCourse');
+    if (raw) { const s = JSON.parse(raw); (s.completed || []).forEach(i => completed.add(i)); if (Number.isInteger(s.current)) currentLesson = s.current; }
+  } catch (e) {}
+  const m = location.hash.match(/^#leccion-(\d+)$/);
+  if (m) { const i = +m[1]; if (i >= 0 && i < lessons.length) currentLesson = i; }
+}
+function applyTheme(t) { if (t === 'light') document.documentElement.setAttribute('data-theme', 'light'); else document.documentElement.removeAttribute('data-theme'); }
+function initTheme() {
+  let t = null; try { t = localStorage.getItem('mcpTheme'); } catch (e) {}
+  if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  applyTheme(t);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const nx = cur === 'light' ? 'dark' : 'light';
+  applyTheme(nx);
+  try { localStorage.setItem('mcpTheme', nx); } catch (e) {}
+}
+function wireUx() {
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight') { if (currentLesson < lessons.length - 1) goTo(currentLesson + 1); }
+    else if (e.key === 'ArrowLeft') { if (currentLesson > 0) goTo(currentLesson - 1); }
+    else if (e.key === 'Escape') { closeSidebar(); }
+  });
+  window.addEventListener('hashchange', () => {
+    const m = location.hash.match(/^#leccion-(\d+)$/);
+    if (m) { const i = +m[1]; if (i !== currentLesson && i >= 0 && i < lessons.length) { currentLesson = i; render(); } }
+  });
+  const s = document.getElementById('navSearch');
+  if (s) s.addEventListener('input', () => {
+    const q = s.value.toLowerCase().trim();
+    document.querySelectorAll('.nav-section').forEach(sec => {
+      let any = false;
+      sec.querySelectorAll('.nav-item').forEach(it => {
+        const hit = it.textContent.toLowerCase().includes(q);
+        it.style.display = hit ? '' : 'none';
+        if (hit) any = true;
+      });
+      const t = sec.querySelector('.nav-section-title');
+      if (t) t.style.display = any ? '' : 'none';
+    });
+  });
+  const tt = document.getElementById('themeToggle');
+  if (tt) tt.addEventListener('click', toggleTheme);
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(i); } });
+  });
 }
 
 // ─── Quiz logic ──────────────────────────────────────────
@@ -2688,7 +2883,10 @@ function closeSidebar() {
 }
 
 // ─── Init ────────────────────────────────────────────────
+initTheme();
+loadState();
 render();
+wireUx();
 </script>
 </body>
 </html>
