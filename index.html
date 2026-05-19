@@ -476,7 +476,7 @@ body::before{display:none}
 <circle class="pr-bg" cx="22" cy="22" r="19"></circle>
 <circle class="pr-fg" id="progressRing" cx="22" cy="22" r="19"></circle>
 </svg>
-<div class="progress-text" id="progressText">0 de 25 lecciones completadas</div>
+<div class="progress-text" id="progressText">0 de 26 lecciones completadas</div>
 </div>
 <div class="nav-search-wrap"><input id="navSearch" class="nav-search" type="search" placeholder="Buscar lección…" aria-label="Buscar lección"></div>
 
@@ -512,19 +512,20 @@ body::before{display:none}
 <div class="nav-item" onclick="goTo(15)"><span class="nav-dot"></span>Transporte y sesiones</div>
 <div class="nav-item" onclick="goTo(16)"><span class="nav-dot"></span>Anatomía de index.ts</div>
 <div class="nav-item" onclick="goTo(17)"><span class="nav-dot"></span>Anatomía de resources.ts</div>
-<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
-<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Anatomía del Dockerfile</div>
-<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Desplegar en AWS (Terraform)</div>
-<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
+<div class="nav-item" onclick="goTo(18)"><span class="nav-dot"></span>Tools calculadas (orquestar)</div>
+<div class="nav-item" onclick="goTo(19)"><span class="nav-dot"></span>Ejecutar y desplegar</div>
+<div class="nav-item" onclick="goTo(20)"><span class="nav-dot"></span>Anatomía del Dockerfile</div>
+<div class="nav-item" onclick="goTo(21)"><span class="nav-dot"></span>Desplegar en AWS (Terraform)</div>
+<div class="nav-item" onclick="goTo(22)"><span class="nav-dot"></span>Probar con MCP Inspector</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Parte 2 · Agentes</div>
-<div class="nav-item" onclick="goTo(22)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
-<div class="nav-item" onclick="goTo(23)"><span class="nav-dot"></span>Crear un skill</div>
+<div class="nav-item" onclick="goTo(23)"><span class="nav-dot"></span>Hermes Agent + Telegram</div>
+<div class="nav-item" onclick="goTo(24)"><span class="nav-dot"></span>Crear un skill</div>
 </div>
 <div class="nav-section">
 <div class="nav-section-title">Cierre</div>
-<div class="nav-item" onclick="goTo(24)"><span class="nav-dot"></span>Certificación</div>
+<div class="nav-item" onclick="goTo(25)"><span class="nav-dot"></span>Certificación</div>
 </div>
 </aside>
 
@@ -2404,11 +2405,131 @@ ${quiz(27, "¿Cómo distingue registerResource un resource estático de una plan
 `
 },
 
+// ─── P2.6d: Tools calculadas (orquestar PokeAPI) ────────
+{
+title: "Tools calculadas: orquestar varias llamadas a PokeAPI",
+subtitle: "De tools que solo leen a tools que combinan, ponderan y deciden",
+badge: "Parte 2 · Lección 9",
+content: `
+<div class="content-block">
+<h2>De lectura pasiva a tools inteligentes</h2>
+<p>Las 5 tools básicas (<code>get_pokemon</code>, <code>get_move</code>…) son <strong>1-a-1</strong> con PokeAPI: una entrada → una llamada → la respuesta envuelta. Las <strong>tools calculadas</strong> orquestan <em>varias</em> llamadas y devuelven un <strong>resultado derivado</strong> (un número, un ranking, un análisis). El cliente sigue viendo una sola herramienta MCP; la complejidad vive dentro del handler.</p>
+<div class="callout">
+<div class="callout-title">Idea central</div>
+<p>El cliente pide "estima el daño de Flamethrower de Charizard contra Venusaur". El handler hace 5+ peticiones a PokeAPI, las combina con la fórmula de daño Gen V+ y devuelve <strong>una sola respuesta accionable</strong>. La capa anti-corrupción (<code>pokeapi.ts</code>) no se toca.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>Las 3 tools calculadas del proyecto</h2>
+<div class="concept-grid">
+<div class="concept-card tool"><span class="icon">💥</span><h4>calculate_damage</h4><p>Estima daño combinando stats, STAB y efectividad de tipo. 4 llamadas + 1 por tipo del defensor.</p></div>
+<div class="concept-card tool"><span class="icon">🎯</span><h4>suggest_counters</h4><p>Rankea N candidatos contra un objetivo: ofensiva vs defensiva, score = bestOffense − (worstDefense − 1).</p></div>
+<div class="concept-card tool"><span class="icon">🛡️</span><h4>type_coverage</h4><p>Analiza un equipo (2-6): debilidades compartidas y tipos sin cobertura ofensiva (STAB).</p></div>
+</div>
+</div>
+
+<div class="content-block">
+<h2>1 · calculate_damage — núcleo del cálculo</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">tools/index.ts (extracto)</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="kw">const</span> [att, def, mv] = <span class="kw">await</span> <span class="type">Promise</span>.<span class="fn">all</span>([
+  <span class="fn">getPokemon</span>(attacker), <span class="fn">getPokemon</span>(defender), <span class="fn">getMove</span>(move),
+]);
+
+<span class="cm">// Efectividad combinada contra los tipos del defensor</span>
+<span class="kw">const</span> defRel = <span class="kw">await</span> <span class="type">Promise</span>.<span class="fn">all</span>(def.types.<span class="fn">map</span>(t =&gt; <span class="fn">getTypeRelations</span>(t.name)));
+<span class="kw">let</span> eff = <span class="num">1</span>;
+<span class="kw">for</span> (<span class="kw">const</span> r <span class="kw">of</span> defRel) {
+  <span class="kw">if</span> (r.double_damage_from.<span class="fn">includes</span>(mv.type)) eff *= <span class="num">2</span>;
+  <span class="kw">if</span> (r.half_damage_from.<span class="fn">includes</span>(mv.type))   eff *= <span class="num">0.5</span>;
+  <span class="kw">if</span> (r.no_damage_from.<span class="fn">includes</span>(mv.type))     eff *= <span class="num">0</span>;
+}
+<span class="kw">const</span> stab = att.types.<span class="fn">some</span>(t =&gt; t.name === mv.type) ? <span class="num">1.5</span> : <span class="num">1</span>;
+
+<span class="cm">// Fórmula Gen V+ simplificada (sin IVs/EVs/naturaleza/rolls)</span>
+<span class="kw">const</span> base = ((<span class="num">2</span>*level)/<span class="num">5</span>+<span class="num">2</span>) * mv.power * (A/D) / <span class="num">50</span> + <span class="num">2</span>;
+<span class="kw">const</span> damage = base * stab * eff;</pre>
+</div>
+<div class="callout">
+<div class="callout-title">Salida real del test</div>
+<p><code>charizard → venusaur, flamethrower lvl 50</code> → STAB 1.5×, efectividad 2× (fire vs grass) → <strong>135 HP (~169% del HP base 80)</strong>. OHKO realista.</p>
+</div>
+</div>
+
+<div class="content-block">
+<h2>2 · suggest_counters — scoring ofensiva vs defensiva</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">scoring por candidato</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">// Ofensiva: mejor multiplicador de algún tipo del candidato</span>
+<span class="cm">// contra la combinación de tipos del objetivo</span>
+<span class="kw">let</span> bestOffense = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">const</span> pt <span class="kw">of</span> pTypes) {
+  <span class="kw">let</span> mult = <span class="num">1</span>;
+  <span class="kw">for</span> (<span class="kw">const</span> rel <span class="kw">of</span> tgtRelations) {
+    <span class="kw">if</span> (rel.double_damage_from.<span class="fn">includes</span>(pt)) mult *= <span class="num">2</span>;
+    <span class="cm">/* half / no damage... */</span>
+  }
+  <span class="kw">if</span> (mult &gt; bestOffense) bestOffense = mult;
+}
+
+<span class="cm">// Defensiva: peor caso recibiendo STAB del objetivo</span>
+<span class="kw">let</span> worstDefense = <span class="num">1</span>;
+<span class="cm">/* ... */</span>
+
+<span class="kw">const</span> score = bestOffense - (worstDefense - <span class="num">1</span>);</pre>
+</div>
+<p>Resultado real contra <strong>dragonite</strong> (dragon/flying): <strong>Weavile</strong> (dark/ice) gana — Ice es <strong>4×</strong> contra Dragon+Flying y resiste 1× los STAB. Togekiss segundo (Fairy 2×), Garchomp tercero (2× pero recibe 2×).</p>
+</div>
+
+<div class="content-block">
+<h2>3 · type_coverage — análisis de equipo</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">TypeScript</span><span class="filename">cobertura defensiva + ofensiva</span><button onclick="copyCode(this)">Copiar</button></div>
+<pre><span class="cm">// Defensiva: por cada tipo X, cuántos miembros lo sufren 2x</span>
+<span class="kw">const</span> weakness = {};
+pokes.<span class="fn">forEach</span>((p, i) =&gt; {
+  <span class="kw">for</span> (<span class="kw">const</span> t <span class="kw">of</span> ALL_TYPES) {
+    <span class="kw">let</span> mult = <span class="num">1</span>;
+    <span class="kw">for</span> (<span class="kw">const</span> r <span class="kw">of</span> memberRelations[i]) <span class="cm">/* combinar */</span>;
+    <span class="kw">if</span> (mult &gt; <span class="num">1</span>) weakness[t] = (weakness[t] ?? <span class="num">0</span>) + <span class="num">1</span>;
+  }
+});
+
+<span class="cm">// Ofensiva: unión de double_damage_to por cada tipo del equipo</span>
+<span class="kw">const</span> canHit = <span class="kw">new</span> <span class="type">Set</span>();
+offRelations.<span class="fn">forEach</span>(r =&gt; r.double_damage_to.<span class="fn">forEach</span>(t =&gt; canHit.<span class="fn">add</span>(t)));</pre>
+</div>
+<p>Para el equipo <code>[charizard, blastoise, venusaur, pikachu]</code>: debilidad compartida <strong>electric (2/4)</strong>, cubren 11 tipos super eficaz, 7 sin cobertura ofensiva.</p>
+</div>
+
+<div class="content-block">
+<h2>Patrón general (válido para cualquier API)</h2>
+<div class="code-block">
+<div class="code-header"><span class="lang">Patrón</span><span class="filename">tool calculada</span></div>
+<pre><span class="num">1</span>. <span class="kw">Validar</span>     entrada con <span class="str">zod</span> (rangos, longitudes, tipos)
+<span class="num">2</span>. <span class="kw">Paralelizar</span> con <span class="type">Promise</span>.<span class="fn">all</span>(...)  -- nunca esperes secuencialmente
+                  si no hay dependencia entre llamadas
+<span class="num">3</span>. <span class="kw">Combinar</span>    los datos con la lógica de dominio (fórmula,
+                  ranking, agregación)
+<span class="num">4</span>. <span class="kw">Manejar</span>     errores por elemento (no abortar el batch entero)
+<span class="num">5</span>. <span class="kw">Devolver</span>    Markdown legible + una nota de límites del modelo</pre>
+</div>
+<div class="callout warning">
+<div class="callout-title">Mantén pokeapi.ts intacto</div>
+<p>Las tools calculadas viven solo en <code>tools/</code>. La capa API sigue siendo el cliente HTTP tipado que no sabe nada de fórmulas. Si mañana cambias de PokeAPI a otra fuente, las tools calculadas no se enteran — solo se reescriben las funciones <code>getPokemon</code>/<code>getMove</code>/<code>getTypeRelations</code>.</p>
+</div>
+</div>
+
+${quiz(50, "¿Qué caracteriza a una tool calculada frente a una tool 1-a-1 con la API?", ["Recibe argumentos opcionales","Orquesta varias llamadas y devuelve un resultado derivado","Solo funciona en Streamable HTTP","Usa caché interna"], 1, "Las 1-a-1 envuelven un endpoint; las calculadas combinan varias llamadas (Promise.all) y aplican lógica de dominio para producir un análisis o un número.")}
+`
+},
+
 // ─── P2.7: Ejecutar y desplegar ─────────────────────────
 {
 title: "Ejecutar, probar y desplegar",
 subtitle: "npm, cliente de prueba, dos bugs reales, Docker y Claude Desktop",
-badge: "Parte 2 · Lección 9",
+badge: "Parte 2 · Lección 10",
 content: `
 <div class="content-block">
 <h2>Correr y verificar</h2>
@@ -2464,7 +2585,7 @@ docker run -p 8000:8000 -e MCP_API_KEY=mi-clave pokemon-mcp-server</pre>
 {
 title: "Anatomía del Dockerfile",
 subtitle: "Build multi-stage: imagen final pequeña, segura y reproducible",
-badge: "Parte 2 · Lección 10",
+badge: "Parte 2 · Lección 11",
 content: `
 <div class="content-block">
 <h2>Por qué un build multi-stage</h2>
@@ -2570,7 +2691,7 @@ ${quiz(28, "¿Por qué el Dockerfile copia package*.json ANTES que src/?", ["Por
 {
 title: "Desplegar en AWS con Terraform",
 subtitle: "De la imagen Docker a producción: ECS Fargate + ALB con IaC",
-badge: "Parte 2 · Lección 11",
+badge: "Parte 2 · Lección 12",
 content: `
 <div class="content-block">
 <h2>Del contenedor a la nube</h2>
@@ -2694,7 +2815,7 @@ ${quiz(29, "¿Por qué el despliegue con Terraform se hace en dos fases?", ["Por
 {
 title: "Probar con MCP Inspector",
 subtitle: "La herramienta oficial para inspeccionar y depurar tu servidor a mano",
-badge: "Parte 2 · Lección 12",
+badge: "Parte 2 · Lección 13",
 content: `
 <div class="content-block">
 <h2>¿Qué es MCP Inspector?</h2>
@@ -2754,7 +2875,7 @@ ${quiz(25, "¿Para qué sirve MCP Inspector frente al cliente de prueba (npm tes
 {
 title: "Hermes Agent + Telegram",
 subtitle: "Chatea por Telegram y deja que un agente use tu servidor MCP",
-badge: "Parte 2 · Lección 13",
+badge: "Parte 2 · Lección 14",
 content: `
 <div class="content-block">
 <h2>El mismo servidor, otro cliente</h2>
@@ -2809,7 +2930,7 @@ ${quiz(23, "Hermes (WSL) no conecta a 127.0.0.1:8000 del servidor (Windows). ¿P
 {
 title: "Crear un skill para Hermes",
 subtitle: "MCP da capacidades; el skill da conducta",
-badge: "Parte 2 · Lección 14",
+badge: "Parte 2 · Lección 15",
 content: `
 <div class="content-block">
 <div class="callout">
