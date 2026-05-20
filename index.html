@@ -455,6 +455,21 @@ body::before{display:none}
 .lightbox-close{position:fixed;top:16px;right:22px;color:#fff;font-size:14px;opacity:.75;letter-spacing:.3px;pointer-events:none}
 .fig-wide{width:min(1240px,calc(100vw - 340px));margin-left:50%;transform:translateX(-50%)}
 @media(max-width:1024px){.fig-wide{width:100%;margin-left:0;transform:none}}
+
+/* ════════ Bloque de vídeo (Lite YouTube facade) ════════ */
+.lesson-video{margin:0 0 28px}
+.lesson-video.empty{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--radius-sm);color:var(--text3);font-size:13px}
+.lesson-video .lv-empty-ico{font-size:18px;opacity:.7;flex-shrink:0}
+.lyt-facade{position:relative;display:block;width:100%;aspect-ratio:16/9;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;text-decoration:none!important;border-bottom:none!important}
+.lyt-facade::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.45) 100%);pointer-events:none}
+.lyt-facade img{width:100%;height:100%;object-fit:cover;display:block}
+.lyt-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:74px;height:74px;border-radius:50%;background:rgba(20,20,30,.78);border:2px solid rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;line-height:0;backdrop-filter:blur(4px);transition:transform .2s,background .2s,color .2s}
+.lyt-facade:hover .lyt-play{transform:translate(-50%,-50%) scale(1.07);background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.lyt-caption{position:absolute;left:14px;right:14px;bottom:12px;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.6);display:flex;align-items:center;gap:8px}
+.lyt-caption .lyt-badge{background:rgba(0,0,0,.6);padding:3px 8px;border-radius:999px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
+.lyt-iframe-wrap{position:relative;aspect-ratio:16/9;background:#000;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.lyt-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
 </style>
 </head>
 <body>
@@ -3464,7 +3479,79 @@ ${options.map((opt, i) => `
 let currentLesson = 0;
 const completed = new Set();
 
-function lessonPart(i){ return i < 10 ? 'Parte 1 · Fundamentos' : (i < 20 ? 'Parte 2 · Práctica' : 'Cierre'); }
+
+// ─── Vídeos de las lecciones ─────────────────────────────────────────────
+// Rellena las URLs conforme grabes cada video. Soporta youtu.be, watch?v=,
+// embed/ y shorts/. El curso muestra el reproductor (Lite YouTube facade)
+// cuando hay URL y un placeholder "próximamente" cuando no la hay.
+const LESSON_VIDEOS = {
+  //  0: "https://youtu.be/...",   //  0 · Bienvenida al curso
+  //  1: "https://youtu.be/...",   //  1 · Solución de IA end-to-end
+  //  2: "https://youtu.be/...",   //  2 · ¿Qué es un agente de IA?
+  //  3: "https://youtu.be/...",   //  3 · ¿Qué es MCP?
+  //  4: "https://youtu.be/...",   //  4 · Arquitectura de MCP
+  //  5: "https://youtu.be/...",   //  5 · Primitivas: Tools
+  //  6: "https://youtu.be/...",   //  6 · Primitivas: Resources
+  //  7: "https://youtu.be/...",   //  7 · Primitivas: Prompts
+  //  8: "https://youtu.be/...",   //  8 · Transportes: STDIO, HTTP y SSE
+  //  9: "https://youtu.be/...",   //  9 · Construye tu primer servidor
+  // 10: "https://youtu.be/...",   // 10 · Parte 2 — El proyecto pokemon-mcp-server
+  // 11: "https://youtu.be/...",   // 11 · La capa API — PokeAPI
+  // 12: "https://youtu.be/...",   // 12 · Autenticación y configuración
+  // 13: "https://youtu.be/...",   // 13 · Tools del servidor
+  // 14: "https://youtu.be/...",   // 14 · Resources y Prompts
+  // 15: "https://youtu.be/...",   // 15 · Transporte Streamable HTTP y sesiones
+  // 16: "https://youtu.be/...",   // 16 · Anatomía de index.ts (Express + MCP)
+  // 17: "https://youtu.be/...",   // 17 · Anatomía de resources/index.ts
+  // 18: "https://youtu.be/...",   // 18 · Tools calculadas: orquestar PokeAPI
+  // 19: "https://youtu.be/...",   // 19 · Ejecutar, probar y desplegar
+  // 20: "https://youtu.be/...",   // 20 · Anatomía del Dockerfile
+  // 21: "https://youtu.be/...",   // 21 · Desplegar en AWS con Terraform
+  // 22: "https://youtu.be/...",   // 22 · Probar con MCP Inspector
+  // 23: "https://youtu.be/...",   // 23 · Hermes Agent + Telegram
+  // 24: "https://youtu.be/...",   // 24 · Crear un skill para Hermes
+  // 25: "https://youtu.be/...",   // 25 · Certificación
+};
+
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+function renderVideoBlock(idx) {
+  const id = extractYouTubeId(LESSON_VIDEOS[idx]);
+  if (!id) {
+    return '<div class="lesson-video empty" aria-label="Video próximamente">'
+      + '<span class="lv-empty-ico">🎬</span>'
+      + '<span><strong>Video de esta lección · próximamente.</strong> Mientras tanto, sigue con el texto.</span>'
+      + '</div>';
+  }
+  const thumb = 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+  return '<div class="lesson-video">'
+    + '<a class="lyt-facade" role="button" tabindex="0" data-yt="' + id + '" aria-label="Reproducir video de la lección" '
+    + 'onclick="loadYouTubeEmbed(event,this)" '
+    + 'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();loadYouTubeEmbed(event,this);}">'
+    + '<img src="' + thumb + '" loading="lazy" decoding="async" alt="Miniatura del video">'
+    + '<span class="lyt-play" aria-hidden="true">▶</span>'
+    + '<span class="lyt-caption"><span class="lyt-badge">YouTube</span> Ver explicación</span>'
+    + '</a></div>';
+}
+
+function loadYouTubeEmbed(ev, el) {
+  ev.preventDefault();
+  const id = el.getAttribute('data-yt');
+  if (!id) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'lyt-iframe-wrap';
+  wrap.innerHTML = '<iframe title="Video de la lección" '
+    + 'src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1" '
+    + 'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" '
+    + 'allowfullscreen loading="lazy"></iframe>';
+  el.parentElement.replaceChild(wrap, el);
+}
+
+function lessonPart(i){ return i < 10 ? 'Parte 1 · Fundamentos' : (i < 25 ? 'Parte 2 · Práctica' : 'Cierre'); }
 function readingTime(htmlStr){ var t = htmlStr.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); var w = t ? t.split(' ').length : 0; return Math.max(1, Math.round(w/180)); }
 function tocJump(ev,id){ ev.preventDefault(); var el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return false; }
 function buildToc(){
@@ -3497,6 +3584,7 @@ function render() {
     <h1 class="lesson-title">${lesson.title}</h1>
     <p class="lesson-subtitle">${lesson.subtitle}</p>
     <div class="lesson-meta"><span>⏱ ${rt} min de lectura</span><span class="lm-dot">•</span><span>Lección ${currentLesson+1} de ${total}</span></div>
+    ${renderVideoBlock(currentLesson)}
     <nav class="lesson-toc" id="lessonToc" hidden></nav>
     ${lesson.content}
     <div class="lesson-nav">
